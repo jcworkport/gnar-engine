@@ -340,8 +340,11 @@ export const scaffolder = {
         // parse existing deploy.yml
         let deploy = yaml.load(fs.readFileSync(deployPath, 'utf8'));
 
+        // throw error if service already exists
+        const existingService = deploy.config.services.find(svc => svc.name === serviceName);
+
+        // get next available host port if not prescribed
         if (!hostPort) {
-            // get next available host port
             const hostPorts = [];
 
             deploy.config.services.forEach(svc => {
