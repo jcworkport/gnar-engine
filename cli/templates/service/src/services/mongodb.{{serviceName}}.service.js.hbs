@@ -1,0 +1,70 @@
+import { db, logger } from '@gnar-engine/core';
+import { ObjectId } from 'mongodb';
+
+export const {{serviceName}} = {
+
+    // Get all {{lowerCasePlural serviceName}}
+    getAll: async () => {
+        try {
+            const items = await db.collection('{{lowerCasePlural serviceName}}').find().toArray();
+            return items;
+        } catch (error) {
+            logger.error("Error fetching {{lowerCasePlural serviceName}}:", error);
+            throw error;
+        }
+    },
+
+    // Create a {{lowerCase serviceName}}
+    create: async (data) => {
+        try {
+            const collection = db.collection('{{lowerCasePlural serviceName}}');
+            const result = await collection.insertOne(data);
+            return await collection.findOne({ _id: result.insertedId });
+        } catch (error) {
+            logger.error("Error creating {{lowerCase serviceName}}:", error);
+            throw error;
+        }
+    },
+
+    // Get a {{lowerCase serviceName}} by ID
+    getById: async ({ id }) => {
+        try {
+            const collection = db.collection('{{lowerCasePlural serviceName}}');
+            const objectId = new ObjectId(id);
+            const item = await collection.findOne({ _id: objectId });
+            return item;
+        } catch (error) {
+            logger.error("Error fetching {{lowerCase serviceName}}:", error);
+            throw error;
+        }
+    },
+
+    // Update a {{lowerCase serviceName}}
+    update: async ({ id, updatedData }) => {
+        try {
+            const collection = db.collection('{{lowerCasePlural serviceName}}');
+            const objectId = new ObjectId(id);
+            const result = await collection.updateOne(
+                { _id: objectId },
+                { $set: updatedData }
+            );
+            return result.modifiedCount > 0;
+        } catch (error) {
+            logger.error("Error updating {{lowerCase serviceName}}:", error);
+            throw error;
+        }
+    },
+
+    // Delete a {{lowerCase serviceName}}
+    delete: async ({ id }) => {
+        try {
+            const collection = db.collection('{{lowerCasePlural serviceName}}');
+            const objectId = new ObjectId(id);
+            const result = await collection.deleteOne({ _id: objectId });
+            return result.deletedCount > 0;
+        } catch (error) {
+            logger.error("Error deleting {{lowerCase serviceName}}:", error);
+            throw error;
+        }
+    }
+};
