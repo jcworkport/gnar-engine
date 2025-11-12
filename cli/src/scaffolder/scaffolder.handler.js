@@ -136,6 +136,25 @@ export const scaffolder = {
 
         // Create the service directory
         fs.mkdirSync(serviceDir, { recursive: true });
+
+        // Add to deploy.yml
+        scaffolder.scaffoldServiceDeployYml({
+            deployPath: path.join(projectDir, 'deploy.localdev.yml'),
+            serviceName: serviceName,
+            database: null
+        });
+        
+        // Scaffold secrets
+        scaffolder.scaffoldServiceSecrets({
+            secretsPath: path.join(projectDir, 'secrets.localdev.yml'),
+            serviceName: serviceName,
+            database: null
+        });
+
+        return {
+            message: `Front-end service "${serviceName}" created successfully at ${serviceDir}`,
+            servicePath: serviceDir
+        };
     },
 
     /**
@@ -347,8 +366,9 @@ export const scaffolder = {
                 parsedSecrets.services[serviceName]['MONGO_HOST'] = mongoHost;
                 break;
             default:
-                throw new Error(`Unsupported database type in secret scaffolder: ${database}`);
-        }
+                // no db
+                break;
+            }
 
         // save updated secrets file
         const newSecretsContent = yaml.dump(parsedSecrets);

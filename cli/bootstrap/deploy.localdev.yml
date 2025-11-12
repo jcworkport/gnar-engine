@@ -35,4 +35,15 @@ config:
         - start:dev
       ports:
         - '4002:3000'
-
+    - name: portal
+      listener_rules:
+        paths:
+          - /portal
+      min_tasks: 1
+      max_tasks: 1
+      command:
+        - npm
+        - run
+        - dev
+      ports:
+        - '4003:3000'

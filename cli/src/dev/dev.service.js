@@ -235,8 +235,8 @@ async function createDynamicDockerCompose({ config, secrets, gnarHiddenDir, proj
             container_name: `ge-${config.environment}-${config.namespace}-${svc.name}`,
             image: `ge-${config.environment}-${config.namespace}-${svc.name}`,
             build: {
-                context: projectDir,
-                dockerfile: `./services/${svc.name}/Dockerfile`
+                context: `${projectDir}/services/${svc.name}`,
+                dockerfile: `./Dockerfile`
             },
             command: svc.command || [],
             environment: env,
