@@ -52,6 +52,25 @@ export const scaffolder = {
                 database
             };
 
+            let fileRelativePath = file.relativePath;
+
+            // Database specific
+            if (fileRelativePath.includes('mongodb.')) {
+                if (database !== 'mongodb') {
+                    return;
+                } else {
+                    fileRelativePath = fileRelativePath.replace('mongodb.', '');
+                }
+            }
+
+            if (fileRelativePath.includes('mysql.')) {
+                if (database !== 'mysql') {
+                    return;
+                } else {
+                    fileRelativePath = fileRelativePath.replace('mysql.', '');
+                }
+            }
+
             switch (file.extension) {
                 case '.hbs':
                     // Compile the Handlebars template for content
@@ -60,7 +79,7 @@ export const scaffolder = {
                     const renderedContent = compiledTemplate(templateArgs);
 
                     // Compile the Handlebars template for the filename (excluding .hbs)
-                    const filenameTemplate = Handlebars.compile(file.relativePath.replace(/\.hbs$/, ''));
+                    const filenameTemplate = Handlebars.compile(fileRelativePath.replace(/\.hbs$/, ''));
                     const renderedFilename = filenameTemplate(templateArgs);
                     targetPath = path.join(serviceDir, renderedFilename);
 
@@ -71,7 +90,7 @@ export const scaffolder = {
                 default:
                     // By default, copy the file to the service directory
                     sourcePath = file.fullPath;
-                    targetPath = path.join(serviceDir, file.relativePath);
+                    targetPath = path.join(serviceDir, fileRelativePath);
                     fs.mkdirSync(path.dirname(targetPath), { recursive: true });
                     fs.copyFileSync(sourcePath, targetPath);
                     break;
@@ -313,10 +332,19 @@ export const scaffolder = {
                 parsedSecrets.services[serviceName]['MYSQL_RANDOM_ROOT_PASSWORD'] = helpers.generateRandomString(16);
                 break;
             case 'mongodb':
-                parsedSecrets.services[serviceName]['MONGO_USER'] = serviceName + '_user';
-                parsedSecrets.services[serviceName]['MONGO_PASSWORD'] = helpers.generateRandomString(16);
-                parsedSecrets.services[serviceName]['MONGO_NAME'] = serviceName + '_db';
-                parsedSecrets.services[serviceName]['MONGO_HOST'] = serviceName + '-db';
+                const mongoPassword = helpers.generateRandomString(16);
+                const mongoRootPassword = helpers.generateRandomString(16);
+                const mongoUser = serviceName + '_user';
+                const mongoDatabase = serviceName + '_db';
+                const mongoHost = serviceName + '-db';
+                const mongoUrl = `mongodb://${mongoUser}:${mongoPassword}@${mongoHost}:27017/${mongoDatabase}`;
+
+                parsedSecrets.services[serviceName]['MONGO_URL'] = mongoUrl;
+                parsedSecrets.services[serviceName]['MONGO_USER'] = mongoUser;
+                parsedSecrets.services[serviceName]['MONGO_PASSWORD'] = mongoPassword;
+                parsedSecrets.services[serviceName]['MONGO_ROOT_PASSWORD'] = mongoRootPassword;
+                parsedSecrets.services[serviceName]['MONGO_DATABASE'] = mongoDatabase;
+                parsedSecrets.services[serviceName]['MONGO_HOST'] = mongoHost;
                 break;
             default:
                 throw new Error(`Unsupported database type in secret scaffolder: ${database}`);
@@ -340,8 +368,15 @@ export const scaffolder = {
         // parse existing deploy.yml
         let deploy = yaml.load(fs.readFileSync(deployPath, 'utf8'));
 
+        // don't duplicate if service already exists
+        const existingService = deploy.config.services.find(svc => svc.name === serviceName);
+
+        if (existingService) {
+            return;
+        }
+
+        // get next available host port if not prescribed
         if (!hostPort) {
-            // get next available host port
             const hostPorts = [];
 
             deploy.config.services.forEach(svc => {

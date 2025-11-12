@@ -53,7 +53,7 @@ export const initDbConnection = async (config) => {
  */
 const initMongoDbConnection = async ({connectionUrl, connectionArgs = {}}) => {
     try {
-        loggerService.info('Connecting to mongo.. ');
+        loggerService.info('Connecting to mongo..');
         const dbClient = await MongoClient.connect(connectionUrl, connectionArgs);
         db = dbClient.db();
 
