@@ -35,17 +35,4 @@ config:
         - start:dev
       ports:
         - '4002:3000'
-    - name: product
-      listener_rules:
-        paths:
-          - /product
-      min_tasks: 1
-      max_tasks: 1
-      command:
-        - npm
-        - run
-        - start:dev
-      ports:
-        - '4003:3000'
-      depends_on:
-        - product-db
+

@@ -9,7 +9,11 @@ import { httpController as {{lowerCase serviceName}}PlatformHttpController } fro
 export const initService = async () => {
 
 	// Run migrations
-	db.migrations.runMigrations({config});
+    if (config.db.type == 'mysql') {
+	    db.migrations.runMigrations({config});
+    }
+
+    // Run seeders
 	db.seeders.runSeeders({config});
 
 	// Import command handlers after the command bus is initialised

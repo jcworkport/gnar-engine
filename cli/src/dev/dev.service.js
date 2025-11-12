@@ -250,7 +250,7 @@ async function createDynamicDockerCompose({ config, secrets, gnarHiddenDir, proj
 
         // add the core source code mount if in coreDeve mode
         if (coreDev) {
-            services[`${svc.name}-service`].volumes.push(`../../../gnar-engine-core:${gnarEngineCliConfig.corePath}`);
+            services[`${svc.name}-service`].volumes.push(`../../../core/:${gnarEngineCliConfig.corePath}`);
         }
 
         // add a mysql instance if required
@@ -286,33 +286,52 @@ async function createDynamicDockerCompose({ config, secrets, gnarHiddenDir, proj
 
         // add a mongodb instance if required
         if (
-            serviceEnvVars.MONGO_URL &&
+            serviceEnvVars.MONGO_HOST &&
             serviceEnvVars.MONGO_ROOT_PASSWORD &&
+            serviceEnvVars.MONGO_DATABASE &&
             serviceEnvVars.MONGO_USER &&
             serviceEnvVars.MONGO_PASSWORD
         ) {
-            services[`${svc.name}-mongo`] = {
+            // add mongo init scripts to hidden dir
+            fs.mkdir(path.join(gnarHiddenDir, 'mongo-init-scripts'), { recursive: true });
+            const mongoInitScript = `
+                db = db.getSiblingDB("invoice_db");
+                db.createUser({
+                    user: "${serviceEnvVars.MONGO_USER}",
+                    pwd: "${serviceEnvVars.MONGO_PASSWORD}",
+                    roles: [{ role: "readWrite", db: "${serviceEnvVars.MONGO_DATABASE}" }]
+                });
+
+                print("Created user ${serviceEnvVars.MONGO_USER} with access to database ${serviceEnvVars.MONGO_DATABASE}");
+            `;
+            await fs.writeFile(path.join(gnarHiddenDir, 'mongo-init-scripts', `${svc.name}-init.js`), mongoInitScript);
+
+            // create mongo service
+            const mongoUrl = `mongodb://${serviceEnvVars.MONGO_USER}:${serviceEnvVars.MONGO_PASSWORD}@${serviceEnvVars.MONGO_HOST}:27017/${serviceEnvVars.MONGO_DATABASE}`;
+            
+            services[`${svc.name}-db`] = {
                 container_name: `ge-${config.environment}-${config.namespace}-${svc.name}-mongo`,
-                image: `ge-${config.environment}-${config.namespace}-${svc.name}-mongo`,
+                image: 'mongo:latest',
                 ports: [
-                    `${mongoPortsCounter}:${mongoPortsCounter}`
+                    `${mongoPortsCounter}:27017`
                 ],
                 restart: 'always',
                 environment: {
-                    [`${svc.name.toUpperCase()}_MONGO_URL`]: serviceEnvVars.MONGO_URL,
-                    [`${svc.name.toUpperCase()}_MONGO_ROOT_PASSWORD`]: serviceEnvVars.MONGO_ROOT_PASSWORD,
-                    [`${svc.name.toUpperCase()}_MONGO_USER`]: serviceEnvVars.MONGO_USER,
-                    [`${svc.name.toUpperCase()}_MONGO_PASSWORD`]: serviceEnvVars.MONGO_PASSWORD,
+                    MONGO_INITDB_ROOT_USERNAME: 'root',
+                    MONGO_INITDB_ROOT_PASSWORD: serviceEnvVars.MONGO_ROOT_PASSWORD,
+                    MONGO_INITDB_DATABASE: serviceEnvVars.MONGO_DATABASE,
+                    DB_USER: serviceEnvVars.MONGO_USER,
+                    DB_PASSWORD: serviceEnvVars.MONGO_PASSWORD,
                 },
                 volumes: [
-                    `${gnarHiddenDir}/Data/${svc.name}-mongo-data:/data/db`
+                    `${gnarHiddenDir}/data/${svc.name}-mongo-data:/data/db`,
+                    './mongo-init-scripts:/docker-entrypoint-initdb.d'
                 ]
             };
 
             // increment mongo port for next service as required
             mongoPortsCounter++;
         }
-        
     }
 
     return {
