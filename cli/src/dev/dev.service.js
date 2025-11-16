@@ -40,8 +40,13 @@ export async function up({ projectDir, build = false, detached = false, coreDev 
 
     // create nginx.conf dynamically from configPath
     const nginxConfPath = path.join(gnarHiddenDir, "nginx", "nginx.conf");
+    const serviceConfDir = path.join(gnarHiddenDir, "nginx", "service_conf")
+    await fs.mkdir(serviceConfDir, { recursive: true });
+
     const nginxConf = await createDynamicNginxConf({
-        config: parsedConfig.config
+        config: parsedConfig.config,
+        projectDir: projectDir,
+        serviceConfDir: serviceConfDir
     });
     await fs.writeFile(nginxConfPath, nginxConf);
 
@@ -128,9 +133,10 @@ export async function down({ projectDir, allContainers = false }) {
  * Create dynamic nginx.conf file for running application locally
  * 
  * @param {object} config
- * @param {string} outputPath - where to write nginx.conf
+ * @param {string} serviceConfDir
+ * @param {string} projectDir
  */
-export async function createDynamicNginxConf({ config, outputPath }) {
+export async function createDynamicNginxConf({ config, serviceConfDir, projectDir }) {
     // Start with the static parts of nginx.conf
     let nginxConf = `
         events { worker_connections 1024; }
@@ -139,10 +145,29 @@ export async function createDynamicNginxConf({ config, outputPath }) {
             server {
                 listen 80;
                 server_name ${config.namespace};
+                include /etc/nginx/service_conf/*.conf;
+
     `;
 
     // Loop over each service
     for (const service of config.services || []) {
+        // Check if override is present and add conf to service_conf dir
+        const serviceDir = path.join(projectDir, 'services', service.name);
+
+        if (await fs.stat(serviceDir).then(() => true).catch(() => false)) {
+            const overridePath = path.join(serviceDir, 'nginx.conf');
+            if (await fs.stat(overridePath).then(() => true).catch(() => false)) {
+                const overrideConf = await fs.readFile(overridePath, 'utf8');
+
+                // write to service_conf directory
+                const serviceConfPath = path.join(serviceConfDir, `${service.name}.conf`);
+                await fs.writeFile(serviceConfPath, overrideConf);
+
+                continue;
+            }
+        }
+
+        // Otherwise create generic conf block
         const serviceName = service.name;
         const paths = service.listener_rules?.paths || [];
         const containerPort = service.ports && service.ports.length > 0 ? service.ports[0].split(':')[1] : '3000';
@@ -194,7 +219,8 @@ async function createDynamicDockerCompose({ config, secrets, gnarHiddenDir, proj
             "443:443"
         ],
         volumes: [
-            `${gnarHiddenDir}/nginx/nginx.conf:/etc/nginx/nginx.conf`
+            `${gnarHiddenDir}/nginx/nginx.conf:/etc/nginx/nginx.conf`,
+            `${gnarHiddenDir}/nginx/service_conf:/etc/nginx/service_conf`
         ],
         restart: 'always'
     }
@@ -235,8 +261,8 @@ async function createDynamicDockerCompose({ config, secrets, gnarHiddenDir, proj
             container_name: `ge-${config.environment}-${config.namespace}-${svc.name}`,
             image: `ge-${config.environment}-${config.namespace}-${svc.name}`,
             build: {
-                context: `${projectDir}/services/${svc.name}`,
-                dockerfile: `./Dockerfile`
+                context: projectDir,
+                dockerfile: `./services/${svc.name}/Dockerfile`
             },
             command: svc.command || [],
             environment: env,

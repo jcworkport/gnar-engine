@@ -45,5 +45,7 @@ config:
         - npm
         - run
         - dev
+        - -- --host
       ports:
-        - '4003:3000'
+        - '4003:5173'
+
