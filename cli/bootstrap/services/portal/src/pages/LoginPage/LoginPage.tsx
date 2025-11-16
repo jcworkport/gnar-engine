@@ -1,14 +1,18 @@
+import LoginForm from "../../components/LoginForm/LoginForm";
+import gnarEngineLogo from '../../assets/gnar-engine-white-logo.svg';
 
 function LoginPage() {
 
     return (
         <div className="login-page flex-row">
-            <div>
-                
+            <div className="login-left-panel">
+                <img src={gnarEngineLogo} className="logo" alt="Gnar Engine" />
             </div>
-            <div>
-                <h1>Gnar Engine</h1>
-                <h2>Admin Login</h2>
+            <div className="login-right-panel">
+                <div>
+                    <h1>Admin Login</h1>
+                    <LoginForm />
+                </div>
             </div>
         </div>
     )

@@ -1,0 +1,203 @@
+/* vars */
+/* Fonts */
+html {
+  background: #242424;
+}
+body,
+body * {
+  font-family: ubuntu, sans-serif !important;
+  color: #ffffff;
+  font-size: 14px;
+}
+/* Global styles */
+h1 {
+  margin-top: 0px;
+  margin-bottom: 40px;
+  font-size: 18px;
+  font-weight: 600;
+}
+h2 {
+  font-size: 14px;
+  font-weight: 500;
+}
+body {
+  margin: 0px;
+}
+body,
+body #root {
+  min-height: 100vh;
+}
+.separator {
+  margin-top: 20px;
+  margin-bottom: 20px;
+  height: 0px;
+  border-top: 1px solid #3C3C3C;
+}
+.content-wrap {
+  display: flex;
+  justify-content: center;
+}
+.content {
+  width: 100%;
+  max-width: 1550px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+.instruction {
+  font-size: 12px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+.flex-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 20px;
+}
+.flex-row-end {
+  align-items: flex-end;
+}
+.form-cont {
+  width: 100%;
+  margin-bottom: 30px;
+}
+.full-width-select-cont,
+.full-width-select-cont .custom-select {
+  min-width: 100%;
+}
+.flex-row-select-cont {
+  min-width: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 20px;
+}
+.flex-row-select-cont .custom-select {
+  width: 100%;
+  max-width: unset;
+}
+.flex-row-checkbox-cont {
+  min-width: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 20px;
+}
+.flex-row-checkbox-cont label {
+  display: inline-block;
+}
+.flex-row-buttons-cont {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  gap: 20px;
+}
+.button.button-loading {
+  background: #3C3C3C !important;
+  cursor: not-allowed !important;
+}
+.button.button-loading:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.text-link {
+  color: #D9D9D9;
+  cursor: pointer;
+  display: inline-block;
+  text-decoration: none;
+  font-size: 14px;
+}
+.text-link:hover {
+  opacity: 0.8;
+}
+input[type="text"],
+input[type="password"],
+input[type="email"],
+textarea {
+  border: 1px solid #3C3C3C;
+  border-radius: 17px;
+  padding: 8px 10px;
+  font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
+  background: none;
+  margin-bottom: 25px;
+  transition: border-color 0.3s;
+}
+input[type="text"]::placeholder,
+input[type="password"]::placeholder,
+input[type="email"]::placeholder,
+textarea::placeholder {
+  color: #ffffff;
+}
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+textarea:focus {
+  outline: none;
+  border-color: #47DCA6;
+}
+button {
+  background: #47DCA6;
+  border: none;
+  border-radius: 17px;
+  color: #242424;
+  padding: 10px 20px;
+  min-width: 143px;
+  font-weight: 700;
+  transition: opacity 0.3s;
+}
+button[type="submit"] {
+  margin-top: 25px;
+  margin-bottom: 25px;
+}
+button:hover {
+  opacity: 0.8;
+  cursor: pointer;
+}
+.login-page {
+  width: 100%;
+  max-width: 100%;
+  height: 100vh;
+  gap: 0px;
+}
+.login-page .login-left-panel {
+  min-width: 50%;
+  background: url('../assets/login-green-rad-back-1.jpg');
+  background-size: cover;
+  background-position: center center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.login-page .login-right-panel {
+  min-width: 50%;
+  background: #242424;
+  padding: 135px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.login-page .username,
+.login-page .password {
+  padding-left: 50px;
+  position: relative;
+  background-repeat: no-repeat;
+  background-position: 12px center;
+  background-size: 18px 18px;
+}
+.login-page .username {
+  background-image: url('../assets/icon-user.svg');
+}
+.login-page .password {
+  background-image: url('../assets/icon-padlock.svg');
+}
+.login-page .login-form {
+  max-width: 450px;
+}
+.login-page .forgotten-password {
+  width: 100%;
+}
