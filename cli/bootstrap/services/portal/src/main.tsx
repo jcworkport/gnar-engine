@@ -4,8 +4,8 @@ import './css/style.css'
 import App from './App.tsx'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import LoginPage from './pages/LoginPage/LoginPage.tsx'
-//import PortalLayout, { portalLoader } from './layouts/PortalLayout.tsx'
-//import DashboardPage from './pages/DashboardPage.tsx'
+import PortalLayout from './layouts/PortalLayout/PortalLayout.tsx'
+import DashboardPage from './pages/DashboardPage/DashboardPage.tsx'
 
 const router = createBrowserRouter([
     {
@@ -16,15 +16,15 @@ const router = createBrowserRouter([
                 path: "login",
                 element: <LoginPage />,
             },
-            // {
-            //     path: "",
-            //     element: <PortalLayout />,
-            //     loader: portalLoader,
-            //     children: [
-            //         { index: true, element: <DashboardPage /> },
-            //         { path: "dashboard", element: <DashboardPage /> }
-            //     ],
-            // }
+            {
+                path: "",
+                element: <PortalLayout />,
+                //loader: portalLoader,
+                children: [
+                    { index: true, element: <DashboardPage /> },
+                    { path: "dashboard", element: <DashboardPage /> }
+                ],
+            }
         ]
     }
 ]);

@@ -28,10 +28,12 @@ body #root {
   min-height: 100vh;
 }
 .separator {
+  display: inline-block;
   margin-top: 20px;
   margin-bottom: 20px;
   height: 0px;
   border-top: 1px solid #3C3C3C;
+  width: 100%;
 }
 .content-wrap {
   display: flex;
@@ -156,6 +158,108 @@ button[type="submit"] {
 button:hover {
   opacity: 0.8;
   cursor: pointer;
+}
+.icon-dashboard {
+  background: url('../assets/icon-home.svg');
+}
+.icon-users {
+  background: url('../assets/icon-users.svg');
+}
+.icon-settings {
+  background: url('../assets/icon-settings.svg');
+}
+.icon-reports {
+  background: url('../assets/icon-reports.svg');
+}
+.portal-main {
+  background: #2C2C2C;
+  min-height: calc(100vh - 71px);
+  width: 100vw;
+  position: absolute;
+  top: 71px;
+  left: 0px;
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
+  overflow: hidden;
+}
+.portal-main .portal-main-inner {
+  position: relative;
+  width: 100%;
+  min-height: calc(100vh - 71px);
+  gap: 0px;
+}
+.portal-main .portal-page {
+  width: 100%;
+  padding: 45px 45px 70px 45px;
+  box-sizing: border-box;
+  position: relative;
+}
+.portal-main .portal-page .portal-page-header {
+  margin-bottom: 30px;
+}
+.portal-main .portal-page .portal-page-header .logo {
+  max-width: 200px;
+}
+.portal-main .portal-page .portal-page-footer {
+  display: flex;
+  flex-direction: row-reverse;
+  width: 100%;
+  position: absolute;
+  box-sizing: border-box;
+  bottom: 30px;
+  left: 0px;
+  padding: 0px 45px;
+}
+.portal-main .portal-page .portal-page-footer p,
+.portal-main .portal-page .portal-page-footer span {
+  margin: 0px;
+  color: #868686;
+}
+.portal-sidebar {
+  background: #242424;
+  min-width: 264px;
+  min-height: 100%;
+  padding: 43px 32px;
+  box-sizing: border-box;
+}
+.portal-sidebar .inner ul {
+  padding: 0px;
+}
+.portal-sidebar .inner ul li {
+  list-style: none;
+  color: #868686;
+  padding-top: 7px;
+  padding-bottom: 7px;
+  padding-left: 50px;
+  background-size: 32px 32px;
+  background-position: left center;
+  background-repeat: no-repeat;
+  font-size: 18px;
+  cursor: pointer;
+}
+.portal-sidebar .inner ul li:first-of-type {
+  color: #ffffff;
+}
+.portal-topbar {
+  background: #47DCA6;
+  min-height: 100vh;
+  width: 100%;
+}
+.user-info {
+  position: absolute;
+  bottom: 30px;
+}
+.user-info .user-info-mini {
+  align-items: center;
+}
+.user-info .user-info-mini .email {
+  margin-top: auto;
+  margin-bottom: auto;
+  height: auto;
+}
+.user-info .gravatar-image {
+  width: 35px;
+  border-radius: 20px;
 }
 .login-page {
   width: 100%;

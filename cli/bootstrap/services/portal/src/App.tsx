@@ -1,11 +1,14 @@
 import { useState } from 'react'
 import { Outlet } from "react-router-dom";
-//import './style.css'
+import { Provider } from 'react-redux';
+import store from './store/configureStore';
 
 function App() {
     return  (
         <>
-            <Outlet />
+            <Provider store={store}>
+                <Outlet />
+            </Provider>
         </>
     )
 }

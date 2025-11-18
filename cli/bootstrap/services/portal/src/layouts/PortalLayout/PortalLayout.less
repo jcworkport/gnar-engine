@@ -1,0 +1,49 @@
+.portal-main {
+    background: @dark-2;
+    min-height: calc(100vh - 71px);
+    width: 100vw;
+    position: absolute;
+    top: 71px;
+    left: 0px;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    overflow: hidden;
+
+    .portal-main-inner {
+        position: relative;
+        width: 100%;
+        min-height: calc(100vh - 71px);
+        gap: 0px;
+    }
+
+    .portal-page {
+        width: 100%;
+        padding: 45px 45px 70px 45px;
+        box-sizing: border-box;
+        position: relative;
+
+        .portal-page-header {
+            margin-bottom: 30px;
+
+            .logo {
+                max-width: 200px;
+            }
+        }
+
+        .portal-page-footer {
+            display: flex;
+            flex-direction: row-reverse;
+            width: 100%;
+            position: absolute;
+            box-sizing: border-box;
+            bottom: 30px;
+            left: 0px;
+            padding: 0px 45px;
+
+            p, span {
+                margin: 0px;
+                color: @mid-grey;
+            }
+        }
+    }
+}

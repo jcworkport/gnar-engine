@@ -6,7 +6,7 @@ import { user } from '../services/user.ts';
 export const login = createAsyncThunk('auth/login', async ({ username, password }) => {
     let response;
     try {
-        response = await user.authenticate(username, password);
+        response = await user.authenticate({ username, password });
     } catch (error) {
         response = error.response;
     }
@@ -55,7 +55,7 @@ export const authSlice = createSlice({
                     setAuthUser(JSON.stringify(action.payload.user));
 
                     // redirect to portal
-                    window.location.href= '/account';
+                    window.location.href= '/portal/dashboard';
                 }
             })
             .addCase(logout, (state, action) => {
@@ -68,7 +68,7 @@ export const authSlice = createSlice({
                 removeAuthUser();
 
                 // Redirect to login page
-                window.location.href = '/login';
+                window.location.href = '/portal/login';
             })
 
             // Register
@@ -87,8 +87,8 @@ export const authSlice = createSlice({
                     // Save user auth details (if needed)
                     setAuthUser(JSON.stringify(user));
             
-                    // Redirect to home page
-                    window.location.href = '/';
+                    // Redirect to dashboard page
+                    window.location.href = '/portal/dashboard';
                 } else {
                     state.logged_in = false;
                     state.user = {};
