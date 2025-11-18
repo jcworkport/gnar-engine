@@ -1,5 +1,5 @@
-import client from '../client.js';
-import {
+import client from './client.ts';
+import type {
     UserApi,
     AuthParams,
     AuthResponse,
@@ -10,7 +10,7 @@ import {
     DeleteUserParams,
     SendPasswordResetParams,
     ChangePasswordParams
-} from './types/user';
+} from './types/user.ts';
 
 export const user: UserApi = {
     authenticate: async ({ username, password }: AuthParams): Promise<AuthResponse> => {

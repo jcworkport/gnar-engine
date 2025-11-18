@@ -3,7 +3,7 @@ import axios from 'axios';
 import { getAuthToken, setAuthToken, removeAuthToken, removeAuthUser } from './storage.js';
 
 // Determine the correct API URL based on the environment
-const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.REACT_APP_API_URL;
+const baseApiUrl = 'http://localhost';
 
 const client = axios.create({
     baseURL: baseApiUrl,
