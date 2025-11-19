@@ -231,7 +231,7 @@ button:hover {
   padding-top: 7px;
   padding-bottom: 7px;
   padding-left: 50px;
-  background-size: 32px 32px;
+  background-size: 28px 28px;
   background-position: left center;
   background-repeat: no-repeat;
   font-size: 18px;
@@ -256,6 +256,7 @@ button:hover {
   margin-top: auto;
   margin-bottom: auto;
   height: auto;
+  font-size: 18px;
 }
 .user-info .gravatar-image {
   width: 35px;

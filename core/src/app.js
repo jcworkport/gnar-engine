@@ -114,11 +114,13 @@ const GnarEngine = {
 			
 			if (token) {
 				// get authenticated user from authentication service
-				const { user } = await GnarEngine.commands.execute('userService.getAuthenticatedUser', {
+				const userResult = await GnarEngine.commands.execute('userService.getAuthenticatedUser', {
 					token: token
 				})
 
-				request.user = user;
+                if (userResult?.user) {
+				    request.user = user;
+                }
 			}
 		});
 

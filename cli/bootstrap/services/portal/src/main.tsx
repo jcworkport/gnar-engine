@@ -6,6 +6,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import LoginPage from './pages/LoginPage/LoginPage.tsx'
 import PortalLayout from './layouts/PortalLayout/PortalLayout.tsx'
 import DashboardPage from './pages/DashboardPage/DashboardPage.tsx'
+import UsersPage from './pages/UsersPage/UsersPage.tsx'
 
 const router = createBrowserRouter([
     {
@@ -22,7 +23,8 @@ const router = createBrowserRouter([
                 //loader: portalLoader,
                 children: [
                     { index: true, element: <DashboardPage /> },
-                    { path: "dashboard", element: <DashboardPage /> }
+                    { path: "dashboard", element: <DashboardPage /> },
+                    { path: "users", element: <UsersPage /> }
                 ],
             }
         ]

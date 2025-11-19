@@ -1,4 +1,5 @@
 import UserInfo from "../UserInfo/UserInfo";
+import { Link } from "react-router-dom";
 
 function Sidebar() {
 
@@ -6,16 +7,16 @@ function Sidebar() {
         <div className="portal-sidebar">
             <div className="inner">
                 <ul>
-                    <li className="icon-dashboard">Dashboard</li>
+                    <li className="icon-dashboard"><Link to="/portal/dashboard">Dashboard</Link></li>
                 </ul>
                 <span className="separator"></span>
                 <ul>
-                    <li className="icon-users">Users</li>
+                    <li className="icon-users"><Link to="/portal/users">Users</Link></li>
                 </ul>
                 <span className="separator"></span>
                 <ul>
-                    <li className="icon-reports">Reports</li>
-                    <li>Logs</li>
+                    <li className="icon-reports"><Link to="/portal/reports">Reports</Link></li>
+                    <li><Link to="/portal/logs">Logs</Link></li>
                 </ul>
             </div>
 
