@@ -86,8 +86,6 @@ commands.register('userService.getAuthenticatedUser', async ({token}) => {
             return userObj;
         }
     }
-
-    return;
 });
 
 

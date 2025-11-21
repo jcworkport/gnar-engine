@@ -99,6 +99,7 @@ const GnarEngine = {
 
 		// Global pre-handlers
 		GnarEngine.http.addHook('onRequest', async (request, reply) => {
+            console.log('onRequest hook');
 		    const { url, method } = request;
 
 			// Append trailing slash internally (no redirect)
@@ -111,15 +112,15 @@ const GnarEngine = {
             // set authenticated user
 			const authHeader = request.raw.headers.authorization || '';
 			const token = authHeader ? authHeader.split(' ')[1] : '';
-			
+		
 			if (token) {
 				// get authenticated user from authentication service
 				const userResult = await GnarEngine.commands.execute('userService.getAuthenticatedUser', {
 					token: token
 				})
 
-                if (userResult?.user) {
-				    request.user = user;
+                if (userResult) {
+				    request.user = userResult;
                 }
 			}
 		});

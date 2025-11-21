@@ -20,7 +20,7 @@ function CrudList({ entityKey, fetchData, entitySingleName, entityPluralName, co
                     return;
                 }
 
-                setItems(newData);
+                setItems(newData[entityKey]);
                 setLoading(false);
             } catch (error) {
                 console.error("Error fetching data:", error);
@@ -52,7 +52,7 @@ function CrudList({ entityKey, fetchData, entitySingleName, entityPluralName, co
                             <tr>
                                 <td colSpan={columns.length}>{error}</td>
                             </tr>
-                        ) : (
+                        ) : items && items.length > 0 ? (
                             items.map((item, index) => (
                                 <tr key={index}>
                                     {columns.map(col => (
@@ -60,6 +60,10 @@ function CrudList({ entityKey, fetchData, entitySingleName, entityPluralName, co
                                     ))}
                                 </tr>
                             ))
+                        ) : (
+                            <tr>
+                                <td colSpan={columns.length}>No {entityPluralName} available.</td>
+                            </tr>
                         )}
                     </tbody>
                 </table>

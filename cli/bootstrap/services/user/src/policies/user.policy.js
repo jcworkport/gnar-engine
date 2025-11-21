@@ -1,4 +1,5 @@
 import { config } from '../config.js';
+import { logger } from '@gnar-engine/core';
 
 
 export const authorise = {
@@ -23,6 +24,7 @@ export const authorise = {
      * Authorise get many users
      */
     getMany: async (request, reply) => {
+        logger.info('user -' + JSON.stringify(request.user)); 
         if (!request.user || request.user.role !== 'service_admin') {
             reply.code(403).send({error: 'not authorised'});
         }
