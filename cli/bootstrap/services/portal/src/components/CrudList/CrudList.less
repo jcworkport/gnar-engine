@@ -30,6 +30,7 @@
             td {
                 padding-top: 15px;
                 padding-bottom: 15px;
+                transition: color 0.2s;
                 
                 &:first-child {
                     padding-left: 30px;
@@ -43,6 +44,14 @@
             &:nth-child(even) {
                 td {
                     background: @dark-3;
+                }
+            }
+
+            &:hover {
+                cursor: pointer;
+                
+                td {
+                    color: @green-main;
                 }
             }
         }

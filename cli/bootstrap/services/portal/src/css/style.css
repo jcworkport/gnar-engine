@@ -330,6 +330,7 @@ button:hover {
 .list-table table tr td {
   padding-top: 15px;
   padding-bottom: 15px;
+  transition: color 0.2s;
 }
 .list-table table tr td:first-child {
   padding-left: 30px;
@@ -339,6 +340,12 @@ button:hover {
 }
 .list-table table tr:nth-child(even) td {
   background: #242424;
+}
+.list-table table tr:hover {
+  cursor: pointer;
+}
+.list-table table tr:hover td {
+  color: #47DCA6;
 }
 .login-page {
   width: 100%;

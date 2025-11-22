@@ -7,6 +7,7 @@ import LoginPage from './pages/LoginPage/LoginPage.tsx'
 import PortalLayout from './layouts/PortalLayout/PortalLayout.tsx'
 import DashboardPage from './pages/DashboardPage/DashboardPage.tsx'
 import UsersPage from './pages/UsersPage/UsersPage.tsx'
+import UserSinglePage from './pages/UserSinglePage/UserSinglePage.tsx'
 
 const router = createBrowserRouter([
     {
@@ -20,11 +21,11 @@ const router = createBrowserRouter([
             {
                 path: "",
                 element: <PortalLayout />,
-                //loader: portalLoader,
                 children: [
                     { index: true, element: <DashboardPage /> },
                     { path: "dashboard", element: <DashboardPage /> },
-                    { path: "users", element: <UsersPage /> }
+                    { path: "users", element: <UsersPage /> },
+                    { path: "users/:userId", element: <UserSinglePage /> }
                 ],
             }
         ]
