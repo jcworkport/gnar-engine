@@ -31,7 +31,7 @@ h1 {
     margin-top: 0px;
     margin-bottom: 40px;
     font-size: 18px;
-    font-weight: 600;
+    font-weight: 400;
 }
 h2 {
     font-size: 14px;
@@ -141,5 +141,31 @@ body {
 
     &:hover {
         opacity: 0.8;
+    }
+}
+
+.input {
+    font-size: 12px;
+    color: @dark-2;
+
+    input {
+        background: @dark-1 !important;
+        color: white;
+        padding: 10px;
+        padding-left: 48px;
+        border-radius: 20px;
+        font-size: 14px;
+        margin-top: 5px;
+        margin-bottom: 5px !important;
+    }
+
+    &.icon {
+        background-size: 15px;
+        background-repeat: no-repeat;
+        background-position: 15px 15px;
+
+        input {
+            padding-left: 50px;
+        }
     }
 }

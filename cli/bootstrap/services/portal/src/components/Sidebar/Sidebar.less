@@ -13,22 +13,25 @@
 
             li {
                 list-style: none;
-                color: @mid-grey;
-                padding-top: 7px;
-                padding-bottom: 7px;
-                padding-left: 50px;
                 background-size: 28px 28px;
                 background-position: left center;
                 background-repeat: no-repeat;
-                font-size: 18px;
-                cursor: pointer;
 
-                &:first-of-type {
+                a {
+                    display: block;
+                    text-decoration: none;
+                    color: @mid-grey;
+                    padding-top: 7px;
+                    padding-bottom: 7px;
+                    padding-left: 50px;
+                    font-size: 18px;
+                    cursor: pointer;
+                }
+
+                &:first-of-type a {
                     color: @white;
                 }
             }
         }
-
-
     }
 }

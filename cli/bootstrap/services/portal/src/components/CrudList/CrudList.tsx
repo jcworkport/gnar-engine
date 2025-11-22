@@ -1,6 +1,25 @@
 import React, { useState, useEffect } from 'react';
 
-function CrudList({ entityKey, fetchData, entitySingleName, entityPluralName, columns }: { entityKey: string; fetchData: fn; entitySingleName: string; entityPluralName: string; columns: Array<{ key: string; label: string }> }) {
+type Columns = {
+    key: string;
+    label: string;
+}
+
+type CrudListProps = {
+    entityKey: string;
+    fetchData: (page: number) => Promise<any>;
+    entitySingleName: string;
+    entityPluralName: string;
+    columns: Columns[];
+}
+
+function CrudList({
+    entityKey,
+    fetchData,
+    entitySingleName,
+    entityPluralName,
+    columns
+}: CrudListProps) {
 
     const [page, setPage] = useState(1);
     const [items, setItems] = useState([]);
@@ -29,6 +48,10 @@ function CrudList({ entityKey, fetchData, entitySingleName, entityPluralName, co
         })();
     }, [entityKey, page]);
 
+    const navigateToCrudSingle = (id: string) => {
+        window.location.href = `/portal/${entityKey}/${id}`;
+    }
+
     return (
         <div className="crud-list">
             <div className="top-action-bar">
@@ -54,7 +77,7 @@ function CrudList({ entityKey, fetchData, entitySingleName, entityPluralName, co
                             </tr>
                         ) : items && items.length > 0 ? (
                             items.map((item, index) => (
-                                <tr key={index}>
+                                <tr key={index} onClick={() => {navigateToCrudSingle(item.id)}}>
                                     {columns.map(col => (
                                         <td key={col.key}>{item[col.key]}</td>
                                     ))}
