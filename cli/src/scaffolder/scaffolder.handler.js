@@ -303,13 +303,17 @@ export const scaffolder = {
         const parsedSecrets = yaml.load(rawSecrets);
 
         // generate random passwords
-        Object.keys(parsedSecrets.services).forEach(serviceName => {
-            Object.keys(parsedSecrets.services[serviceName]).forEach(key => {
-                if (key.toLowerCase().includes('pass')) {
-                    parsedSecrets.services[serviceName][key] = helpers.generateRandomString(16);
-                }
+        try {
+            Object.keys(parsedSecrets.services).forEach(serviceName => {
+                Object.keys(parsedSecrets.services[serviceName]).forEach(key => {
+                    if (key.toLowerCase().includes('pass')) {
+                        parsedSecrets.services[serviceName][key] = helpers.generateRandomString(16);
+                    }
+                });
             });
-        });
+        } catch (error) {
+            throw new Error('Error generating random passwords for project secrets: ' + error.message);
+        }
 
         // set random root api key
         const cliApiKey = helpers.generateRandomString(32);
@@ -348,7 +352,7 @@ export const scaffolder = {
                 parsedSecrets.services[serviceName]['MYSQL_PASSWORD'] = helpers.generateRandomString(16);
                 parsedSecrets.services[serviceName]['MYSQL_DATABASE'] = serviceName + '_db';
                 parsedSecrets.services[serviceName]['MYSQL_HOST'] = serviceName + '-db';
-                parsedSecrets.services[serviceName]['MYSQL_RANDOM_ROOT_PASSWORD'] = helpers.generateRandomString(16);
+                parsedSecrets.services[serviceName]['MYSQL_ROOT_PASSWORD'] = helpers.generateRandomString(16);
                 break;
             case 'mongodb':
                 const mongoPassword = helpers.generateRandomString(16);

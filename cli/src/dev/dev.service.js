@@ -285,9 +285,10 @@ async function createDynamicDockerCompose({ config, secrets, gnarHiddenDir, proj
             serviceEnvVars.MYSQL_DATABASE &&
             serviceEnvVars.MYSQL_USER &&
             serviceEnvVars.MYSQL_PASSWORD &&
-            serviceEnvVars.MYSQL_RANDOM_ROOT_PASSWORD
+            serviceEnvVars.MYSQL_ROOT_PASSWORD &&
+            !services[serviceEnvVars.MYSQL_HOST]
         ) {
-            services[`${svc.name}-db`] = {
+            services[serviceEnvVars.MYSQL_HOST] = {
                 container_name: `ge-${config.environment}-${config.namespace}-${svc.name}-db`,
                 image: 'mysql',
                 ports: [
@@ -299,7 +300,7 @@ async function createDynamicDockerCompose({ config, secrets, gnarHiddenDir, proj
                     MYSQL_DATABASE: serviceEnvVars.MYSQL_DATABASE,
                     MYSQL_USER: serviceEnvVars.MYSQL_USER,
                     MYSQL_PASSWORD: serviceEnvVars.MYSQL_PASSWORD,
-                    MYSQL_RANDOM_ROOT_PASSWORD: serviceEnvVars.MYSQL_RANDOM_ROOT_PASSWORD,
+                    MYSQL_ROOT_PASSWORD: serviceEnvVars.MYSQL_ROOT_PASSWORD,
                 },
                 volumes: [
                     `${gnarHiddenDir}/data/${svc.name}-db-data:/var/lib/mysql`
@@ -316,7 +317,8 @@ async function createDynamicDockerCompose({ config, secrets, gnarHiddenDir, proj
             serviceEnvVars.MONGO_ROOT_PASSWORD &&
             serviceEnvVars.MONGO_DATABASE &&
             serviceEnvVars.MONGO_USER &&
-            serviceEnvVars.MONGO_PASSWORD
+            serviceEnvVars.MONGO_PASSWORD &&
+            !serviceEnvVars[MONGO_HOST]
         ) {
             // add mongo init scripts to hidden dir
             fs.mkdir(path.join(gnarHiddenDir, 'mongo-init-scripts'), { recursive: true });
@@ -334,8 +336,8 @@ async function createDynamicDockerCompose({ config, secrets, gnarHiddenDir, proj
 
             // create mongo service
             const mongoUrl = `mongodb://${serviceEnvVars.MONGO_USER}:${serviceEnvVars.MONGO_PASSWORD}@${serviceEnvVars.MONGO_HOST}:27017/${serviceEnvVars.MONGO_DATABASE}`;
-            
-            services[`${svc.name}-db`] = {
+
+            services[serviceEnvVars.MONGO_HOST] = {
                 container_name: `ge-${config.environment}-${config.namespace}-${svc.name}-mongo`,
                 image: 'mongo:latest',
                 ports: [

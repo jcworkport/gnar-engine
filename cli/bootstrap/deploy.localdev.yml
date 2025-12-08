@@ -13,7 +13,7 @@ config:
       min_tasks: 1
       max_tasks: 1
       depends_on:
-        - control-db
+        - db-mysql 
       command:
         - npm
         - run
@@ -28,7 +28,7 @@ config:
       min_tasks: 1
       max_tasks: 1
       depends_on:
-        - user-db
+        - db-mysql
       command:
         - npm
         - run
