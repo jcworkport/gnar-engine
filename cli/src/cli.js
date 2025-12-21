@@ -28,3 +28,9 @@ G n a r  E n g i n e -  A powerful, AI ready microservice framework for modern a
 
 // Parse CLI input
 program.parse(process.argv);
+
+// Consts
+export const directories = {
+    scaffolderTemplates: path.join(import.meta.dirname, '../templates/service'),
+    bootstrap: path.join(import.meta.dirname, '../bootstrap')
+}

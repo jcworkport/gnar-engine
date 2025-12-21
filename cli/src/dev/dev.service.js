@@ -209,7 +209,21 @@ async function createDynamicDockerCompose({ config, secrets, gnarHiddenDir, proj
     let mysqlPortsCounter = 3306;
     let mongoPortsCounter = 27017;
     const services = {};
-    
+
+    // provision the provisioner service
+    services['provisioner'] = {
+        container_name: `ge-${config.environment}-${config.namespace}-provisioner`,
+        image: `ge-${config.environment}-${config.namespace}-provisioner`,
+        build: {
+            context: projectDir,
+            dockerfile: `./services/${svc.name}/Dockerfile`
+        },
+        environment: {
+            PROVISIONER_SECRETS: JSON.stringify(secrets)
+        },
+        restart: 'no'
+    }
+
     // nginx
     services['nginx'] = {
         image: 'nginx:latest',
@@ -274,18 +288,19 @@ async function createDynamicDockerCompose({ config, secrets, gnarHiddenDir, proj
             restart: 'always'
         };
 
-        // add the core source code mount if in coreDeve mode
+        // add the core source code mount if in coreDev mode
         if (coreDev) {
             services[`${svc.name}-service`].volumes.push(`../../../core/:${gnarEngineCliConfig.corePath}`);
         }
+
+        console.table(serviceEnvVars);
 
         // add a mysql instance if required
         if (
             serviceEnvVars.MYSQL_HOST &&
             serviceEnvVars.MYSQL_DATABASE &&
             serviceEnvVars.MYSQL_USER &&
-            serviceEnvVars.MYSQL_PASSWORD &&
-            serviceEnvVars.MYSQL_ROOT_PASSWORD &&
+            serviceEnvVars.MYSQL_PASSWORD
             !services[serviceEnvVars.MYSQL_HOST]
         ) {
             services[serviceEnvVars.MYSQL_HOST] = {
@@ -374,3 +389,4 @@ async function createDynamicDockerCompose({ config, secrets, gnarHiddenDir, proj
 async function assertGnarEngineHiddenDir(gnarHiddenDir) {
     await fs.mkdir(gnarHiddenDir, { recursive: true });
 }
+

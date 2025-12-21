@@ -3,7 +3,10 @@ import fs from 'fs';
 import yaml from 'js-yaml';
 import { profiles } from '../profiles/profiles.client.js';
 import { helpers } from '../helpers/helpers.js';
+import { directories } from '../cli.js';
 import Handlebars from 'handlebars';
+
+
 
 /**
  * Gnar Engine Scaffolder
@@ -32,10 +35,9 @@ export const scaffolder = {
         fs.mkdirSync(serviceDir, { recursive: true });
 
         // Get all files in the templates directory
-        const templatesDir = path.join(import.meta.dirname, '../../templates/service');
         const templateFiles = scaffolder.getAllTemplateFiles({
-            dir: templatesDir,
-            baseDir: templatesDir
+            dir: directories.scaffolderTemplates,
+            baseDir: directories.scaffolderTemplates
         }); 
 
         // Register Handlebars helpers
