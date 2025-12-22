@@ -12,6 +12,8 @@ export function registerDevCommands(program) {
 		.description('🛠️  Up Development Containers')
 		.option('-b, --build', 'Ruild without cache')
         .option('-d, --detach', 'Run containers in background')
+        .option('-t --test', 'Run the tests with ephemeral databases')
+        .option('--test-service <service>', 'Run the tests for the specified service with ephemeral databases')
         .addOption(new Option('--core-dev').hideHelp())
         .action(async (options) => {
 			let response = {};
@@ -27,13 +29,19 @@ export function registerDevCommands(program) {
 			// Change to the active profile directory
 			const projectDir = activeProfile.PROJECT_DIR;
 
+            if (options.testService) {
+                options.test = true;
+            }
+
 			try {
 				up({
                     projectDir: projectDir,
                     build: options.build || false,
                     detach: options.detach || false,
-                    coreDev: options.coreDev || false
-                });
+                    coreDev: options.coreDev || false,
+                    test: options.test || false,
+                    testService: options.testService || ''
+                 });
 			} catch (err) {
 				console.error("❌ Error running containers:", err.message);
 				process.exit(1);

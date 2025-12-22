@@ -1,4 +1,4 @@
-import { message, http, logger, db, registerService, webSockets } from '@gnar-engine/core';
+import { message, http, logger, db, registerService, webSockets, test } from '@gnar-engine/core';
 import { config } from './config.js';
 import { messageHandlers } from './controllers/message.controller.js';
 import { httpController as userPlatformHttpController } from './controllers/http.controller.js';
@@ -40,6 +40,11 @@ export const initService = async () => {
     await registerService();
 
 	logger.info('G n a r  E n g i n e | User Service initialised successfully.');
+
+    // Tests
+    if (config.environment === 'test' && config.runTests) {
+        test.runCommandTests({config});
+    }
 }
 
 initService();

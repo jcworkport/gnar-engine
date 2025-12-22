@@ -6,6 +6,10 @@ export const config = {
     // service name
     serviceName: 'userService',
 
+    // environment
+    environment: process.env.USER_NODE_ENV || 'dev',
+    runTests: process.env.USER_RUN_TESTS || false,
+
     // microservice | modular-monolith
     architecture: process.env.GLOBAL_ARCHITECTURE || 'microservice',
 

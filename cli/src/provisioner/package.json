@@ -11,6 +11,8 @@
     "author": "Gnar Software Ltd.",
     "license": "ISC",
     "dependencies": {
-        "@gnar-engine/core": "^1.0.1"
+        "@gnar-engine/core": "^1.0.1",
+        "mysql2": "^3.12.0",
+        "dotenv": "^16.4.7"
     }
 }
