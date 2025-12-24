@@ -1,7 +1,7 @@
 import { message, http, logger, db, registerService, webSockets, test } from '@gnar-engine/core';
 import { config } from './config.js';
 import { messageHandlers } from './controllers/message.controller.js';
-import { httpController as {{lowerCase serviceName}}PlatformHttpController } from './controllers/http.controller.js';
+import { httpController as pagePlatformHttpController } from './controllers/http.controller.js';
 
 /**
  * Initialise service
@@ -17,7 +17,7 @@ export const initService = async () => {
 	db.seeders.runSeeders({config});
 
 	// Import command handlers after the command bus is initialised
-	await import('./commands/{{lowerCase serviceName}}.handler.js');
+	await import('./commands/page.handler.js');
 	// Add more handlers as needed
 
 	// Initialise and register message handlers
@@ -32,7 +32,7 @@ export const initService = async () => {
 	// Register http routes
 	await http.registerRoutes({
 		controllers: [
-			{{lowerCase serviceName}}PlatformHttpController,
+			pagePlatformHttpController,
 		]
 	});
 
@@ -42,7 +42,7 @@ export const initService = async () => {
     // Register service with control service
     await registerService();
 
-	logger.info('G n a r  E n g i n e | {{capitaliseFirstLetter serviceName}} Service initialised successfully.');
+	logger.info('G n a r  E n g i n e | Page Service initialised successfully.');
 
     // Tests
     if (config.environment === 'test' && config.runTests) {

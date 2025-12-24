@@ -437,7 +437,7 @@ export const scaffolder = {
         // add database service if required
         if (database) {
             serviceConfig.depends_on = [
-                `${serviceName}-db`
+                `db-${database}`
             ]
         }
 

@@ -3,11 +3,7 @@
  */
 export const config = {
     // service name
-    serviceName: '{{serviceName}}Service',
-
-    // environment
-    environment: process.env.{{upperCase serviceName}}_NODE_ENV || 'dev',
-    runTests: process.env.{{upperCase serviceName}}_RUN_TESTS || false,
+    serviceName: 'pageService',
 
     // microservice | modular-monolith
     architecture: process.env.GLOBAL_ARCHITECTURE || 'microservice',
@@ -26,26 +22,17 @@ export const config = {
     // database
     db: {
         // type: mongodb | mysql
-        type: 'mysql',
+        type: 'mongodb',
 
         // MongoDB
-        connectionUrl: process.env.{{upperCase serviceName}}_MONGO_URL,
+        connectionUrl: process.env.PAGE_MONGO_URL,
         connectionArgs: {},
-
-        // MySQL
-        host: process.env.{{upperCase serviceName}}_MYSQL_HOST,
-        user: process.env.{{upperCase serviceName}}_MYSQL_USER,
-        password: process.env.{{upperCase serviceName}}_MYSQL_PASSWORD,
-        database: process.env.{{upperCase serviceName}}_MYSQL_DATABASE,
-        connectionLimit: 10,
-        queueLimit: 20,
-        maxRetries: 5
     },
 
     // message broker
     message: {
         url: process.env.RABBITMQ_URL,
-        queueName: '{{serviceName}}ServiceQueue',
+        queueName: 'pageServiceQueue',
         prefetch: 20
     },
 
@@ -54,5 +41,5 @@ export const config = {
         maxInitialConnectionAttempts: 5
     },
 
-    hashNameSpace: '{{uuid}}',
+    hashNameSpace: '',
 }
