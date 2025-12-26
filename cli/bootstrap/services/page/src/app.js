@@ -1,7 +1,7 @@
 import { message, http, logger, db, registerService, webSockets, test } from '@gnar-engine/core';
 import { config } from './config.js';
 import { messageHandlers } from './controllers/message.controller.js';
-import { httpController as pagePlatformHttpController } from './controllers/http.controller.js';
+import { httpController as pagePlatformHttpController } from './controllers/page.http.controller.js';
 
 /**
  * Initialise service
