@@ -353,7 +353,7 @@ export const scaffolder = {
                 parsedSecrets.services[serviceName]['MYSQL_USER'] = serviceName + '_user';
                 parsedSecrets.services[serviceName]['MYSQL_PASSWORD'] = helpers.generateRandomString(16);
                 parsedSecrets.services[serviceName]['MYSQL_DATABASE'] = serviceName + '_db';
-                parsedSecrets.services[serviceName]['MYSQL_HOST'] = serviceName + '-db';
+                parsedSecrets.services[serviceName]['MYSQL_HOST'] = 'db-mysql';
                 parsedSecrets.services[serviceName]['MYSQL_ROOT_PASSWORD'] = helpers.generateRandomString(16);
                 break;
             case 'mongodb':
@@ -361,7 +361,7 @@ export const scaffolder = {
                 const mongoRootPassword = helpers.generateRandomString(16);
                 const mongoUser = serviceName + '_user';
                 const mongoDatabase = serviceName + '_db';
-                const mongoHost = serviceName + '-db';
+                const mongoHost = 'db-mongo';
                 const mongoUrl = `mongodb://${mongoUser}:${mongoPassword}@${mongoHost}:27017/${mongoDatabase}`;
 
                 parsedSecrets.services[serviceName]['MONGO_URL'] = mongoUrl;

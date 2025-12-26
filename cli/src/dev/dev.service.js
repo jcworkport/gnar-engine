@@ -343,7 +343,7 @@ async function createDynamicDockerCompose({ config, secrets, gnarHiddenDir, proj
         // add a mongodb instance if required
         if (
             serviceEnvVars.MONGO_HOST &&
-            serviceEnvVars.MONGO_ROOT_PASSWORD
+            secrets.provision?.MONGO_ROOT_PASSWORD
         ) {
             mongoHostsRequired.push(serviceEnvVars.MONGO_HOST);
         }
@@ -381,6 +381,7 @@ async function createDynamicDockerCompose({ config, secrets, gnarHiddenDir, proj
     // add mongo hosts if required
     if (mongoHostsRequired.length > 0) {
         for (const host of mongoHostsRequired) {
+            console.log('should add ', host);
             if (services[host]) {
                 continue;
             }
@@ -403,7 +404,7 @@ async function createDynamicDockerCompose({ config, secrets, gnarHiddenDir, proj
             // const mongoUrl = `mongodb://${serviceEnvVars.MONGO_USER}:${serviceEnvVars.MONGO_PASSWORD}@${serviceEnvVars.MONGO_HOST}:27017/${serviceEnvVars.MONGO_DATABASE}`;
 
             services[host] = {
-                container_name: `ge-${config.environment}-${config.namespace}-${svc.name}-mongo`,
+                container_name: `ge-${config.environment}-${config.namespace}-${host}`,
                 image: 'mongo:latest',
                 ports: [
                     `${mongoPortsCounter}:27017`
@@ -411,10 +412,10 @@ async function createDynamicDockerCompose({ config, secrets, gnarHiddenDir, proj
                 restart: 'always',
                 environment: {
                     MONGO_INITDB_ROOT_USERNAME: 'root',
-                    MONGO_INITDB_ROOT_PASSWORD: serviceEnvVars.MONGO_ROOT_PASSWORD
+                    MONGO_INITDB_ROOT_PASSWORD: secrets.provision.MONGO_ROOT_PASSWORD
                 },
                 volumes: [
-                    `${gnarHiddenDir}/data/${svc.name}-mongo-data:/data/db`,
+                    `${gnarHiddenDir}/data/${host}-data:/data/db`,
                     './mongo-init-scripts:/docker-entrypoint-initdb.d'
                 ]
             };
