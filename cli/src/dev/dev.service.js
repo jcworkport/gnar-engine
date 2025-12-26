@@ -20,8 +20,10 @@ const docker = new Docker();
  * @param {boolean} [options.detached=false] - Whether to run containers in background
  * @param {boolean} [options.coreDev=false] - Whether to run in core development mode (requires access to core source)
  * @param {boolean} [options.test=false] - Whether to run tests with ephemeral databases
+ * @param {string} [options.testService=''] - The service to run tests for (only applicable if test=true)
+ * @param {boolean} [options.removeOrphans=true] - Whether to remove orphaned containers
  */
-export async function up({ projectDir, build = false, detached = false, coreDev = false, test = false, testService = '' }) {
+export async function up({ projectDir, build = false, detached = false, coreDev = false, test = false, testService = '', removeOrphans = true }) {
     
     // core dev
     if (coreDev) {
@@ -74,6 +76,10 @@ export async function up({ projectDir, build = false, detached = false, coreDev 
 
     if (detached) {
         args.push("-d");
+    }
+
+    if (removeOrphans) {
+        args.push("--remove-orphans")
     }
 
     const processRef = spawn(
@@ -209,8 +215,10 @@ export async function createDynamicNginxConf({ config, serviceConfDir, projectDi
  * @param {string} projectDir
  * @param {boolean} coreDev - Whether to volume mount the core source code
  * @param {boolean} test - Whether to run tests with ephemeral databases
+ * @param {string} testService - The service to run tests for (only applicable if test=true)
+ * @param {boolean} attachAll - Whether to attach to all containers' stdio (otherwise databases and message queue are detached)
  */
-async function createDynamicDockerCompose({ config, secrets, gnarHiddenDir, projectDir, coreDev = false, test = false, testService }) {
+async function createDynamicDockerCompose({ config, secrets, gnarHiddenDir, projectDir, coreDev = false, test = false, testService, attachAll = false }) {
     let mysqlPortsCounter = 3306;
     let mongoPortsCounter = 27017;
     let mysqlHostsRequired = [];
@@ -248,7 +256,8 @@ async function createDynamicDockerCompose({ config, secrets, gnarHiddenDir, proj
         volumes: [
             `${directories.provisioner}/src:/usr/gnar_engine/app/src`
         ],
-        restart: 'no'
+        restart: 'no',
+        attach: attachAll
     }
 
     if (coreDev) {
@@ -267,7 +276,8 @@ async function createDynamicDockerCompose({ config, secrets, gnarHiddenDir, proj
             `${gnarHiddenDir}/nginx/nginx.conf:/etc/nginx/nginx.conf`,
             `${gnarHiddenDir}/nginx/service_conf:/etc/nginx/service_conf`
         ],
-        restart: 'always'
+        restart: 'always',
+        attach: attachAll
     }
 
     // rabbit
@@ -282,7 +292,8 @@ async function createDynamicDockerCompose({ config, secrets, gnarHiddenDir, proj
             RABBITMQ_DEFAULT_USER: secrets.global.RABBITMQ_USER || '',
             RABBITMQ_DEFAULT_PASS: secrets.global.RABBITMQ_PASS || ''
         },
-        restart: 'always'
+        restart: 'always',
+        attach: attachAll
     }
 
     // services
@@ -369,7 +380,8 @@ async function createDynamicDockerCompose({ config, secrets, gnarHiddenDir, proj
                 },
                 volumes: [
                     `${gnarHiddenDir}/data/${host}-data:/var/lib/mysql`
-                ]
+                ],
+                attach: attachAll
             };
 
             mysqlPortsCounter++;
@@ -386,23 +398,6 @@ async function createDynamicDockerCompose({ config, secrets, gnarHiddenDir, proj
                 continue;
             }
 
-            // // add mongo init scripts to hidden dir
-            // fs.mkdir(path.join(gnarHiddenDir, 'mongo-init-scripts'), { recursive: true });
-            // const mongoInitScript = `
-            //     db = db.getSiblingDB("invoice_db");
-            //     db.createUser({
-            //         user: "${serviceEnvVars.MONGO_USER}",
-            //         pwd: "${serviceEnvVars.MONGO_PASSWORD}",
-            //         roles: [{ role: "readWrite", db: "${serviceEnvVars.MONGO_DATABASE}" }]
-            //     });
-            //
-            //     print("Created user ${serviceEnvVars.MONGO_USER} with access to database ${serviceEnvVars.MONGO_DATABASE}");
-            // `;
-            // await fs.writeFile(path.join(gnarHiddenDir, 'mongo-init-scripts', `${svc.name}-init.js`), mongoInitScript);
-            //
-            // // create mongo service
-            // const mongoUrl = `mongodb://${serviceEnvVars.MONGO_USER}:${serviceEnvVars.MONGO_PASSWORD}@${serviceEnvVars.MONGO_HOST}:27017/${serviceEnvVars.MONGO_DATABASE}`;
-
             services[host] = {
                 container_name: `ge-${config.environment}-${config.namespace}-${host}`,
                 image: 'mongo:latest',
@@ -417,7 +412,8 @@ async function createDynamicDockerCompose({ config, secrets, gnarHiddenDir, proj
                 volumes: [
                     `${gnarHiddenDir}/data/${host}-data:/data/db`,
                     './mongo-init-scripts:/docker-entrypoint-initdb.d'
-                ]
+                ],
+                attach: attachAll
             };
 
             // increment mongo port for next service as required
