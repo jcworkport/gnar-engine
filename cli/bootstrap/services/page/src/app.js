@@ -2,23 +2,19 @@ import { message, http, logger, db, registerService, webSockets, test } from '@g
 import { config } from './config.js';
 import { messageHandlers } from './controllers/message.controller.js';
 import { httpController as pagePlatformHttpController } from './controllers/page.http.controller.js';
+import { httpController as blockPlatformHttpController } from './controllers/block.http.controller.js';
 
 /**
  * Initialise service
  */
 export const initService = async () => {
 
-	// Run migrations
-    if (config.db.type == 'mysql') {
-	    db.migrations.runMigrations({config});
-    }
-
     // Run seeders
 	db.seeders.runSeeders({config});
 
 	// Import command handlers after the command bus is initialised
 	await import('./commands/page.handler.js');
-	// Add more handlers as needed
+    await import('./commands/block.handler.js');
 
 	// Initialise and register message handlers
 	await message.init({
@@ -33,6 +29,7 @@ export const initService = async () => {
 	await http.registerRoutes({
 		controllers: [
 			pagePlatformHttpController,
+            blockPlatformHttpController
 		]
 	});
 

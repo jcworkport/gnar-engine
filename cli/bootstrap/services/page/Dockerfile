@@ -8,7 +8,7 @@ WORKDIR /usr/gnar_engine/app
 ENV GLOBAL_SERVICE_BASE_DIR=/usr/gnar_engine/app/src/
 
 # Copy package.json and package-lock.json
-COPY ./package*.json ./
+COPY ./services/page/package*.json ./
 
 # Install nodemon
 RUN npm install -g nodemon

@@ -1,4 +1,5 @@
 import { mysqlService } from './services/mysql.js';
+import { mongoService } from './services/mongodb.js';
 import { secrets } from './services/secrets.js';
 
 /**
@@ -18,8 +19,9 @@ export const initService = async () => {
         return;
     }
 
-    // collate mysql databases from secrets
+    // collate databases to provision from secrets
     const mysqlDatabases = secrets.collateMysqlDatabases(provisionerSecrets);
+    const mongoDatabases = secrets.collateMongoDatabases(provisionerSecrets);
 
     // provision mysql databases
     if (mysqlDatabases) {
@@ -36,6 +38,19 @@ export const initService = async () => {
         console.log('No MySQL databases to provision.');
     }
 
+    if (mongoDatabases) {
+        for (const [key, value] of Object.entries(mongoDatabases)) {
+            mongoService.provisionDatabase({
+                host: value.host,
+                database: value.database,
+                user: value.user,
+                password: value.password,
+                rootPassword: provisionerSecrets.provision.MONGO_ROOT_PASSWORD
+            })
+        }
+    } else {
+        console.log('No MongoDB databases to provision.');
+    }
 }
 
 initService();

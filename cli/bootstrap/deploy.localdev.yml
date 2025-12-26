@@ -51,7 +51,8 @@ config:
     - name: page
       listener_rules:
         paths:
-          - /page
+          - /pages
+          - /blocks
       min_tasks: 1
       max_tasks: 1
       command:
