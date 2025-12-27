@@ -27,6 +27,19 @@ const schemaService = {
             }
             return false;
         };
+    },
+
+    addFormat: (name, regex) => {
+        ajv.addFormat(name, regex);
+    },
+
+    addKeyword: (name, definition) => {
+            ajv.addKeyword(name, definition);
+    },
+
+    addSchema: (schemaObj) => {
+        manifest.addSchema(schemaObj);
+        ajv.addSchema(schemaObj.schema, schemaObj.$id);
     }
 }
 

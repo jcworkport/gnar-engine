@@ -92,5 +92,10 @@ export const imageSchema = {
     }
 }
 
+schema.addSchema(blockSchema);
+schema.addSchema(textInputSchema);
+schema.addSchema(wysiwygSchema);
+schema.addSchema(imageSchema);
 
 export const validatePage = schema.compile(pageSchema);
+export const validateBlock = schema.compile(blockSchema);

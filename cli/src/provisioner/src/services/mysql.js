@@ -6,11 +6,14 @@ const maxRetries = 5;
 export const mysqlService = {
 
     /**
- * Provision database and users
+     * Provision database and users
      *
+     * @param {Object} params - The parameters object
+     * @param {string} host - The database host
      * @param {string} database - The database name
      * @param {string} user - The database user
      * @param {string} password - The database user password
+     * @param {string} rootPassword - The root user password
      */
     provisionDatabase: async ({host, database, user, password, rootPassword}) => {
         let retries = 0;
@@ -30,7 +33,6 @@ export const mysqlService = {
 
                 console.log(`Successfully provisioned MySQL database: ${database} and user: ${user}`);
                 await conn.end();
-
                 return;
 
             } catch (error) {

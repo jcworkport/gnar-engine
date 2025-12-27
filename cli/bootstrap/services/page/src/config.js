@@ -25,7 +25,11 @@ export const config = {
         type: 'mongodb',
 
         // MongoDB
-        connectionUrl: process.env.PAGE_MONGO_URL,
+        host: process.env.PAGE_MONGO_HOST,
+        database: process.env.PAGE_MONGO_DATABASE,
+        user: process.env.PAGE_MONGO_USER,
+        password: process.env.PAGE_MONGO_PASSWORD,
+        port: process.env.PAGE_MONGO_PORT || 27017,
         connectionArgs: {},
     },
 
