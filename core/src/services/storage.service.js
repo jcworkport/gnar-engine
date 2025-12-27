@@ -1,4 +1,6 @@
-import { loggerService } from './logger.service.js';    
+import { loggerService } from './logger.service.js';
+import { localStorageDriver } from '../drivers/storage/local.js';
+import { s3StorageDriver } from '../drivers/storage/s3.js';
 
 export const storage = {
 
@@ -11,21 +13,24 @@ export const storage = {
     init: async (config) => {
         try {
             if (!config.driver) {
-                loggerService.info('No storage driver specified');
+                loggerService.info('No storage driver specified, skipping storage initialization.');
+                return;
             }
 
             switch (config.driver) {
                 case 'local':
                     storage.driverName = 'local';
-                    storage.driver = await import('../drivers/storage/local.js').default;
+                    storage.driver = localStorageDriver;
                     break;
                 case 's3':
                     storage.driverName = 's3';
-                    storage.driver = await import('../drivers/storage/s3.js').default;
+                    storage.driver = s3StorageDriver;
                     break;
                 default:
                     throw new Error(`Unsupported storage type: ${config.driver}`);
             }
+
+            await storage.driver.init(config);
         } catch (error) {
             loggerService.error(`Storage initialization error: ${error.message}`);
             throw error;
@@ -37,6 +42,7 @@ export const storage = {
      * @param {string} key — Destination path/key (e.g., 'uploads/user123/photo.png')
      * @param {string} contentType — MIME type for S3 objects, optional for local
      * @param {Object} metadata — Optional metadata tags (S3: object metadata, Local: sidecar JSON if implemented)
+     * @return {Promise<string>} - Returns the file URL or key upon successful upload
      */
     upload: async ({file, key, contentType, metadata}) => {
         try {
