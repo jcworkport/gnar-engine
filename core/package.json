@@ -30,6 +30,7 @@
     "framework"
   ],
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.958.0",
     "@fastify/cors": "^11.0.0",
     "@fastify/rate-limit": "^10.2.2",
     "ajv": "^8.17.1",

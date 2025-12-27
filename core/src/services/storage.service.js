@@ -1,8 +1,7 @@
 import { loggerService } from './logger.service.js';
-import { localStorageDriver } from '../drivers/storage/local.js';
 import { s3StorageDriver } from '../drivers/storage/s3.js';
 
-export const storage = {
+export const storageService = {
 
     driverName: '',
     driver: null,
@@ -18,19 +17,15 @@ export const storage = {
             }
 
             switch (config.driver) {
-                case 'local':
-                    storage.driverName = 'local';
-                    storage.driver = localStorageDriver;
-                    break;
                 case 's3':
-                    storage.driverName = 's3';
-                    storage.driver = s3StorageDriver;
+                    storageService.driverName = 's3';
+                    storageService.driver = s3StorageDriver;
                     break;
                 default:
                     throw new Error(`Unsupported storage type: ${config.driver}`);
             }
 
-            await storage.driver.init(config);
+            await storageService.driver.init(config);
         } catch (error) {
             loggerService.error(`Storage initialization error: ${error.message}`);
             throw error;
@@ -46,7 +41,7 @@ export const storage = {
      */
     upload: async ({file, key, contentType, metadata}) => {
         try {
-            return await storage.driver.upload({file, key, contentType, metadata});
+            return await storageService.driver.upload({file, key, contentType, metadata});
         } catch (error) {
             loggerService.error(`Storage upload error: ${error.message}`);
             throw error;
@@ -59,7 +54,7 @@ export const storage = {
      */
     download: async ({key, stream}) => {
         try {
-            return await storage.driver.download({key, stream});
+            return await storageService.driver.download({key, stream});
         } catch (error) {
             loggerService.error(`Storage download error: ${error.message}`);
             throw error;
@@ -71,7 +66,7 @@ export const storage = {
      */
     delete: async ({key}) => {
         try {
-            return await storage.driver.delete({key});
+            return await storageService.driver.delete({key});
         } catch (error) {
             loggerService.error(`Storage delete error: ${error.message}`);
             throw error;
@@ -84,7 +79,7 @@ export const storage = {
      */
     getUrl: async ({key, expiresIn}) => {
         try {
-            return await storage.driver.getUrl({key, expiresIn});
+            return await storageService.driver.getUrl({key, expiresIn});
         } catch (error) {
             loggerService.error(`Storage getUrl error: ${error.message}`);
             throw error;

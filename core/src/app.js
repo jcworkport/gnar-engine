@@ -12,7 +12,7 @@ import { messageAwaitResponse, messageAndForget } from './services/message.servi
 import { wsManager } from './services/websocket.service.js';
 import schemaService from './services/schema.service.js';
 import { testService } from './services/test.service.js';
-import { storage } from './services/storage.service.js';
+import { storageService } from './services/storage.service.js';
 import { manifest } from './commands/command-manifest.js';
 import { v4 as uuidv4 } from 'uuid';
 import { v5 as uuidv5 } from 'uuid';
@@ -149,8 +149,10 @@ const GnarEngine = {
         GnarEngine.test = testService;
 
         // Storage
-        storage.init(config.storage);
-        GnarEngine.storage = storage;
+        if (config.storage && config.storage.driver) {
+            storageService.init(config.storage);
+            GnarEngine.storage = storageService;
+        }
 	}
 }
 

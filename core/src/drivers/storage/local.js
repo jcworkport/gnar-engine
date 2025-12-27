@@ -1,6 +1,7 @@
 
 /**
  * Storage Driver: local filesystem
+ * Not implemented
  */
 export const localStorageDriver = {
 
