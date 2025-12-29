@@ -8,6 +8,7 @@
 @light-grey: #D9D9D9;
 @white: #ffffff;
 @green-main: #47DCA6;
+@error-red: #FF4D4F;
 
 @content-width: 1550px;
 
@@ -66,9 +67,9 @@ body {
     padding-right: 20px;
 }
 .instruction {
-    font-size: 12px;
     margin-top: 10px;
     margin-bottom: 10px;
+    color: @light-grey;
 }
 .flex-row {
     display: flex;
@@ -167,5 +168,31 @@ body {
         input {
             padding-left: 50px;
         }
+    }
+}
+
+.single-crud-page {
+    .top-bar {
+        margin-bottom: 20px;
+    }
+    .bottom-bar {
+        margin-top: 20px;
+        margin-bottom: 20px;
+        justify-content: flex-end;
+    }
+}
+
+.error-messages {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+
+    ul {
+        list-style: none;
+        margin: 0px;
+    }
+
+    li, a, span, p {
+        color: @error-red;
     }
 }

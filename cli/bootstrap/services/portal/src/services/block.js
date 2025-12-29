@@ -6,22 +6,22 @@ export const blocks = {
         return data;
     },
 
-    getBlock: async ({ id }) => {
+    getBlock: async ( id ) => {
         const { data } = await client.get(`/blocks/${id}`);
         return data;
     },
 
-    create: async ({ block }) => {
+    create: async ( block ) => {
         const { data } = await client.post('/blocks/', { block });
         return data;
     },
 
-    update: async ({ id, block }) => {
+    update: async ( id, block ) => {
         const { data } = await client.post(`/blocks/${id}`, { block });
         return data;
     },
 
-    delete: async ({ id }) => {
+    delete: async ( id ) => {
         await client.delete(`/users/${id}`);
     }
 };

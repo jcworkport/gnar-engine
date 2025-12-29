@@ -1,21 +1,59 @@
 import React, { useState } from 'react';
 import Card from '../../layouts/Card/Card';
 import Repeater from '../../elements/Repeater/Repeater';
+import SaveButton from '../../elements/SaveButton/SaveButton';
 import TextInput from '../../components/TextInput/TextInput';
+import { blocks } from '../../services/block.js';
+import CustomSelect from '../../elements/CustomSelect/CustomSelect';
+import { fieldTypes } from '../../data/pages.data.js';
 
 function BlockSinglePage() {
 
     const [blockId, setBlockId] = useState('');
     const [blockFields, setBlockFields] = useState([]);
     const [blockDetails, setBlockDetails] = useState({});
+    const [errors, setErrors] = useState([]);
+    const [loading, setLoading] = useState(false);
 
     const validateField = (e) => {
         const value = e.target.value;
-        // Add validation logic here
+        
+        
     }
 
-    const save = () => {
+    const save = async () => {
+        setLoading(true);
         console.log('Saving...', { blockId, blockFields, blockDetails });
+
+        // create new block
+        if (!blockId) {
+            try {
+                await blocks.create({
+                    details: blockDetails,
+                    fields: blockFields
+                })
+            } catch (error) {
+                console.error('Error creating block:', error);
+                setErrors([error]);
+            }
+        }
+
+        // update existing block
+        else {
+            confirm('Are you sure you would like to update this block? This could result in page content being removed when they are next updated.')
+
+            try {
+                await blocks.update(blockId, {
+                    details: blockDetails,
+                    fields: blockFields
+                });
+            } catch (error) {
+                console.error('Error creating block:', error);
+                setErrors([error]);
+            }
+        }
+
+        setLoading(false);
     }
 
     return (
@@ -34,7 +72,7 @@ function BlockSinglePage() {
                     <Card
                         title="Block Fields"
                     >
-                        <p>Add fields to your block, save it and then use the block in your pages</p>
+                        <p className="instruction">Add fields to your block, save it and then use the block in your pages</p>
 
                         <Repeater
                             items={blockFields}
@@ -44,6 +82,23 @@ function BlockSinglePage() {
                             renderRow= {(item, index, updateItem) => (
 
                                 <div className="flex-row">
+                                    <TextInput 
+                                        label="Field Name"
+                                        placeholder="Enter field name"
+                                        value={blockFields[index].name || ''}
+                                        onChange={(e) => {
+                                            validateField(e)
+                                            const blockField = { ...blockFields[index], name: e.target.value };
+                                            setBlockFields([
+                                                ...blockFields.slice(0, index),
+                                                blockField,
+                                                ...blockFields.slice(index + 1)
+                                            ]);
+                                        }}
+                                        errorMessage="Invalid field name"
+                                        isValid={true}
+                                    />
+
                                     <TextInput 
                                         label="Field Key"
                                         placeholder="Enter field key"
@@ -61,21 +116,21 @@ function BlockSinglePage() {
                                         isValid={true}
                                     />
 
-                                    <TextInput 
-                                        label="Select Field Type"
-                                        placeholder="Select field type"
-                                        value={blockFields[index].type || ''}
-                                        onChange={(e) => {
-                                            validateField(e)
-                                            const blockField = { ...blockFields[index], type: e.target.value };
+                                    <CustomSelect
+                                        label="Field Type"
+                                        placeholder="Select Field Type"
+                                        name={`field-type-select-${index}`}
+                                        options={fieldTypes}
+                                        labelKey="name"
+                                        setSelectedOption={(option) => {
+                                            const blockField = { ...blockFields[index], type: option.value };
                                             setBlockFields([
                                                 ...blockFields.slice(0, index),
                                                 blockField,
                                                 ...blockFields.slice(index + 1)
                                             ]);
                                         }}
-                                        errorMessage="Invalid field type"
-                                        isValid={true}
+                                        selectedOption={fieldTypes.find(ft => ft.value === (blockFields[index].type || ''))}
                                     />
                                 </div>
                             )}
@@ -89,7 +144,7 @@ function BlockSinglePage() {
                     <Card
                         title="Block details"
                     >
-                        <div className="flex-row">
+                        <div className="flex-col">
                             <TextInput 
                                 label="Block Name"
                                 placeholder="Enter block Name"
@@ -126,11 +181,28 @@ function BlockSinglePage() {
 
             <div className="flex-row bottom-bar">
                 <div className="button-group">
-                    <button onClick={save}>Save</button>
+                    <SaveButton
+                        onClick={save}
+                        itemName="Block"
+                        loading={loading}
+                        error={errors.length > 0}
+                        isNew={!blockId}
+                    />
                 </div>
             </div>
-        </div>
 
+            <div>
+                {errors.length > 0 && (
+                    <div className="error-messages">
+                        <ul>
+                            {errors.map((error, index) => (
+                                <li key={index}>{error.message}</li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+            </div>
+        </div>
     )
 }
 

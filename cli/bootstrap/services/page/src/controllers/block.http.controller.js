@@ -47,7 +47,7 @@ export const httpController = {
 			const params = {
 				blocks: [request.body.block]
 			};
-			const results = await commands.execute('createBlock', params);
+			const results = await commands.execute('createBlocks', params);
 			reply.code(200).send({ blocks: results });
 		},
 	},

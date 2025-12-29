@@ -12,7 +12,7 @@ body * {
 /* Global styles */
 h1 {
   margin-top: 0px;
-  margin-bottom: 40px;
+  margin-botterror-messagesom: 40px;
   font-size: 18px;
   font-weight: 400;
 }
@@ -48,9 +48,9 @@ body #root {
   padding-right: 20px;
 }
 .instruction {
-  font-size: 12px;
   margin-top: 10px;
   margin-bottom: 10px;
+  color: #D9D9D9;
 }
 .flex-row {
   display: flex;
@@ -136,10 +136,34 @@ body #root {
 .input.icon input {
   padding-left: 50px;
 }
+.single-crud-page .top-bar {
+  margin-bottom: 20px;
+}
+.single-crud-page .bottom-bar {
+  margin-top: 20px;
+  margin-bottom: 20px;
+  justify-content: flex-end;
+}
+.error-messages {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+}
+.error-messages ul {
+  list-style: none;
+  margin: 0px;
+}
+.error-messages li,
+.error-messages a,
+.error-messages span,
+.error-messages p {
+  color: #FF4D4F;
+}
 input[type="text"],
 input[type="password"],
 input[type="email"],
-textarea {
+textarea,
+.custom-select .custom-select-input {
   border: 1px solid #3C3C3C;
   border-radius: 17px;
   padding: 8px 10px;
@@ -153,13 +177,15 @@ textarea {
 input[type="text"]::placeholder,
 input[type="password"]::placeholder,
 input[type="email"]::placeholder,
-textarea::placeholder {
+textarea::placeholder,
+.custom-select .custom-select-input::placeholder {
   color: #ffffff;
 }
 input[type="text"]:focus,
 input[type="password"]:focus,
 input[type="email"]:focus,
-textarea:focus {
+textarea:focus,
+.custom-select .custom-select-input:focus {
   outline: none;
   border-color: #47DCA6;
 }
@@ -196,10 +222,15 @@ button:hover {
 .icon-agent {
   background: url('../assets/icon-agent.svg');
 }
+.icon-page {
+  background: url('../assets/icon-page.svg');
+}
+.icon-delete {
+  background: url('../assets/icon-delete.svg');
+}
 .card {
   border: 1px solid #3C3C3C;
   border-radius: 10px;
-  overflow: hidden;
   margin-bottom: 30px;
 }
 .card .card-title {
@@ -208,9 +239,16 @@ button:hover {
   padding: 20px 40px;
   font-size: 16px;
   font-weight: 400;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  overflow: hidden;
 }
 .card .card-content {
   padding: 30px 40px;
+}
+.card .instruction {
+  color: #868686;
+  margin-bottom: 30px;
 }
 .card-columns {
   display: flex;
@@ -225,6 +263,19 @@ button:hover {
 }
 .card-columns p {
   margin-top: 0px;
+}
+.card input[type="text"],
+.card input[type="password"],
+.card input[type="email"],
+.card textarea {
+  margin-top: 8px;
+  background: #242424;
+}
+.card input[type="text"]::placeholder,
+.card input[type="password"]::placeholder,
+.card input[type="email"]::placeholder,
+.card textarea::placeholder {
+  color: #D9D9D9;
 }
 .portal-main {
   background: #2C2C2C;
@@ -377,6 +428,113 @@ button:hover {
 .list-table table tr:hover td {
   color: #47DCA6;
 }
+.repeater-row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  position: relative;
+  align-items: center;
+  gap: 20px;
+}
+.remove-repeater-row {
+  display: inline-block;
+  width: 30px;
+  height: 30px;
+  background-repeat: no-repeat;
+  background-position: center center;
+  margin-bottom: 10px;
+  opacity: 0.6;
+}
+.remove-repeater-row:hover {
+  cursor: pointer;
+  opacity: 1;
+}
+.custom-select-cont {
+  display: inline-block;
+}
+.custom-select-cont label {
+  width: 100%;
+}
+.custom-select {
+  max-width: 215px;
+  min-width: 215px;
+  position: relative;
+}
+.custom-select .custom-select-input {
+  position: relative;
+  width: 100%;
+  padding: 6px 10px;
+  margin: 10px 0;
+  border: 1px solid #3C3C3C;
+  background: #242424;
+  border-radius: 25px;
+  box-sizing: border-box;
+  font-size: 15px;
+  color: #242424;
+  z-index: 3;
+}
+.custom-select .custom-select-input:hover {
+  cursor: pointer;
+}
+.custom-select .custom-select-input:after {
+  content: url('../assets/chevron.svg');
+  transition-duration: 0.1s;
+  position: absolute;
+  right: 8px;
+  top: 5px;
+  transform-origin: center;
+  height: 20px;
+}
+.custom-select .custom-select-options {
+  position: absolute;
+  width: 100%;
+  top: 10px;
+  left: 0px;
+  max-height: 200px;
+  height: 0px !important;
+  overflow: hidden;
+  background: #242424;
+  border: 1px solid #3C3C3C;
+  box-sizing: border-box;
+  border-radius: 15px;
+  z-index: 2;
+  transition-duration: 0.3s;
+}
+.custom-select .custom-select-options .custom-select-options-inner {
+  min-height: 200px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.custom-select .custom-select-options .custom-select-option:first-child {
+  margin-top: 30px;
+}
+.custom-select .custom-select-options .custom-select-option {
+  padding: 10px;
+  opacity: 0.8;
+  transition-duration: 0.1s;
+  color: #D9D9D9;
+  font-size: 15px;
+}
+.custom-select .custom-select-options .custom-select-option:hover {
+  opacity: 1;
+  cursor: pointer;
+  color: #47DCA6;
+}
+.custom-select.open {
+  z-index: 5;
+}
+.custom-select.open .custom-select-options {
+  height: 400px !important;
+}
+.custom-select.open .custom-select-input {
+  border: 1px solid #47DCA6;
+}
+.custom-select.open .custom-select-input:after {
+  transform: rotate(180deg);
+}
+.custom-select.closing {
+  z-index: 5;
+}
 .login-page {
   width: 100%;
   max-width: 100%;
@@ -420,4 +578,7 @@ button:hover {
 }
 .login-page .forgotten-password {
   width: 100%;
+}
+#MagiCSS-bookmarklet span {
+  color: black !important;
 }

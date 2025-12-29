@@ -24,6 +24,7 @@ export const authorise = {
      * Authorise create blocks
      */
     create: async (request, reply) => {
+        console.log('request user', request.user);
         if (!request.user || request.user.role !== 'service_admin') {
             reply.code(403).send({error: 'not authorised'});
         }

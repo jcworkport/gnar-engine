@@ -53,6 +53,12 @@ client.interceptors.response.use(
 
         }
 
+        if (error.response.data.message) {
+            return Promise.reject({
+                message: error.response.data.message
+            });
+        }
+
         return Promise.reject(error);
     }
 );

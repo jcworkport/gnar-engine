@@ -7,7 +7,7 @@ import { validateBlock } from '../schema/page.schema.js';
 /**
  * Get single block
  */
-commands.register('blockService.getSingleBlock', async ({id}) => {
+commands.register('pageService.getSingleBlock', async ({id}) => {
     if (id) {
         return await block.getById({id: id});
     } else {
@@ -18,14 +18,14 @@ commands.register('blockService.getSingleBlock', async ({id}) => {
 /**
  * Get many blocks
  */
-commands.register('blockService.getManyBlocks', async ({}) => {
+commands.register('pageService.getManyBlocks', async ({}) => {
     return await block.getAll();
 });
 
 /**
  * Create blocks
  */
-commands.register('blockService.createBlocks', async ({ pages }) => {
+commands.register('pageService.createBlocks', async ({ blocks }) => {
     const validationErrors = [];
     let createdNewBlocks = [];
 
@@ -50,7 +50,7 @@ commands.register('blockService.createBlocks', async ({ pages }) => {
 /**
  * Update block
  */
-commands.register('blockService.updateBlock', async ({id, newBlockData}) => {
+commands.register('pageService.updateBlock', async ({id, newBlockData}) => {
     
     const validationErrors = [];
     
@@ -86,7 +86,7 @@ commands.register('blockService.updateBlock', async ({id, newBlockData}) => {
 /**
  * Delete block
  */
-commands.register('blockService.deleteBlock', async ({id}) => {
+commands.register('pageService.deleteBlock', async ({id}) => {
     const obj = await block.getById({id: id});
     if (!obj) {
         throw new error.notFound('Block not found');

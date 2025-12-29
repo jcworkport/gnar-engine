@@ -1,7 +1,6 @@
 .card {
     border: 1px solid #3C3C3C;
     border-radius: 10px;
-    overflow: hidden;
     margin-bottom: 30px;
     
     .card-title {
@@ -10,10 +9,18 @@
         padding: 20px 40px;
         font-size: 16px;
         font-weight: 400;
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+        overflow: hidden;
     }
     
     .card-content {
         padding: 30px 40px;
+    }
+
+    .instruction {
+        color: @mid-grey;
+        margin-bottom: 30px;
     }
 }
 
@@ -28,9 +35,22 @@
     
     & > .col-33 {
         width: 33%;
-    }
-    
+    }   
     p {
         margin-top: 0px;
+    }
+}
+
+.card {
+    input[type="text"],
+    input[type="password"],
+    input[type="email"],
+    textarea {
+        margin-top: 8px;
+        background: @dark-3; 
+
+        &::placeholder {
+            color: @light-grey; 
+        }
     }
 }

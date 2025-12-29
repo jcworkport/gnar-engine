@@ -19,7 +19,7 @@ const Repeater = ({ items = [], setItems, defaultItem, renderRow, buttonText }) 
             {items.length > 0 && items.map((item, index) => 
                 <div className="repeater-row" key={index}>
                     {renderRow(item, index, (newItem) => updateItem(index, newItem))}
-                    <button onClick={() => removeItem(index)} className="remove-repeater-row">Remove</button>
+                    <span onClick={() => removeItem(index)} className="icon-delete remove-repeater-row"></span>
                 </div>
             )}
             <div className="button-cont">
