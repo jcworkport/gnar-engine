@@ -1,7 +1,7 @@
 /**
  * Auth token
  */
-export function getAuthToken(): string | null {
+export function getAuthToken() {
     if (typeof window === 'undefined') return null;
     try {
         return localStorage.getItem('GE_AUTH_TOKEN');
@@ -11,7 +11,7 @@ export function getAuthToken(): string | null {
     }
 }
 
-export function setAuthToken(authToken: string): void {
+export function setAuthToken(authToken) {
     if (typeof window === 'undefined') return;
     try {
         localStorage.setItem('GE_AUTH_TOKEN', authToken);
@@ -20,7 +20,7 @@ export function setAuthToken(authToken: string): void {
     }
 }
 
-export function removeAuthToken(): void {
+export function removeAuthToken() {
     if (typeof window === 'undefined') return;
     try {
         localStorage.removeItem('GE_AUTH_TOKEN');
@@ -32,7 +32,7 @@ export function removeAuthToken(): void {
 /**
  * Auth user
  */
-export function getAuthUser(): string | null {
+export function getAuthUser() {
     if (typeof window === 'undefined') return null;
     try {
         return localStorage.getItem('GE_AUTH_USER');
@@ -42,7 +42,7 @@ export function getAuthUser(): string | null {
     }
 }
 
-export function setAuthUser(authUser: string): void {
+export function setAuthUser(authUser) {
     if (typeof window === 'undefined') return;
     try {
         localStorage.setItem('GE_AUTH_USER', authUser);
@@ -51,7 +51,7 @@ export function setAuthUser(authUser: string): void {
     }
 }
 
-export function removeAuthUser(): void {
+export function removeAuthUser() {
     if (typeof window === 'undefined') return;
     try {
         localStorage.removeItem('GE_AUTH_USER');
@@ -59,3 +59,4 @@ export function removeAuthUser(): void {
         console.error('Error removing auth user:', error);
     }
 }
+

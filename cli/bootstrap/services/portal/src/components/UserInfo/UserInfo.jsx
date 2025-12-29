@@ -4,18 +4,16 @@ import { getGravatarUrl } from "../../services/gravatar";
 
 function UserInfo() {
 
-    const { authUser } = useSelector((state: any) => state.auth);
+    const { authUser } = useSelector((state) => state.auth);
     const [loading, setLoading] = useState(true);
     const [gravatarUrl, setGravatarUrl] = useState('');
 
     useEffect(() => {
-
         if (authUser && authUser.email) {
             const gravatar = getGravatarUrl(authUser.email, { size: 100 });
             setGravatarUrl(gravatar);
             setLoading(false);
         }
-
     }, [authUser])
 
     return (

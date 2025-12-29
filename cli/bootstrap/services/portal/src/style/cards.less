@@ -1,0 +1,36 @@
+.card {
+    border: 1px solid #3C3C3C;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 30px;
+    
+    .card-title {
+        background: #242424;
+        margin: 0px;
+        padding: 20px 40px;
+        font-size: 16px;
+        font-weight: 400;
+    }
+    
+    .card-content {
+        padding: 30px 40px;
+    }
+}
+
+.card-columns {
+    display: flex;
+    flex-wrap: no-wrap;
+    gap: 50px;
+    
+    & > .col-66 {
+        width: 66%;
+    }
+    
+    & > .col-33 {
+        width: 33%;
+    }
+    
+    p {
+        margin-top: 0px;
+    }
+}

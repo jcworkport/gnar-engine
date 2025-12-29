@@ -1,12 +1,6 @@
 import CryptoJS from "crypto-js";
 
-export interface GravatarOptions {
-  size?: number;
-  defaultImage?: string;
-  rating?: string;
-}
-
-export function getGravatarUrl(email: string, options: GravatarOptions = {}): string {
+export function getGravatarUrl(email, options) {
     const {
         size = 200,
         defaultImage = "mp",

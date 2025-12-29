@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, createAction } from '@reduxjs/toolkit';
-import { getAuthToken, getAuthUser, setAuthToken, setAuthUser, removeAuthToken, removeAuthUser } from '../services/storage.ts';
-import { user } from '../services/user.ts';
+import { getAuthToken, getAuthUser, setAuthToken, setAuthUser, removeAuthToken, removeAuthUser } from '../services/storage.js';
+import { user } from '../services/user.js';
 
 
 export const login = createAsyncThunk('auth/login', async ({ username, password }) => {

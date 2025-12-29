@@ -15,7 +15,7 @@ export const config = {
 
     // web server
     http: {
-        allowedOrigins: [],
+        allowedOrigins: ['localhost', 'localhost:4003'],
         allowedMethods: ['GET', 'POST', 'PUT', 'DELETE'],
         allowedHeaders: ['Content-Type', 'Authorization'],
         rateLimiting: {

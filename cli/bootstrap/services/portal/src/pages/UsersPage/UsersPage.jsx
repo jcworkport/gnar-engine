@@ -1,5 +1,5 @@
 import CrudList from '../../components/CrudList/CrudList';
-import { user } from '../../services/user.ts';
+import { user } from '../../services/user.js';
 
 function UsersPage() {
 

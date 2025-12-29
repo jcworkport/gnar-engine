@@ -1,25 +1,12 @@
 import React, { useState, useEffect } from 'react';
 
-type Columns = {
-    key: string;
-    label: string;
-}
-
-type CrudListProps = {
-    entityKey: string;
-    fetchData: (page: number) => Promise<any>;
-    entitySingleName: string;
-    entityPluralName: string;
-    columns: Columns[];
-}
-
 function CrudList({
     entityKey,
     fetchData,
     entitySingleName,
     entityPluralName,
     columns
-}: CrudListProps) {
+}) {
 
     const [page, setPage] = useState(1);
     const [items, setItems] = useState([]);
@@ -48,14 +35,14 @@ function CrudList({
         })();
     }, [entityKey, page]);
 
-    const navigateToCrudSingle = (id: string) => {
+    const navigateToCrudSingle = (id, entityKey) => {
         window.location.href = `/portal/${entityKey}/${id}`;
     }
 
     return (
         <div className="crud-list">
             <div className="top-action-bar">
-                
+                <button onClick={() => {window.location.href = `/portal/${entityKey}/new`}}>Create New {entitySingleName}</button>
             </div>
             <div className="list-table">
                 <table>

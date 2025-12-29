@@ -196,6 +196,36 @@ button:hover {
 .icon-agent {
   background: url('../assets/icon-agent.svg');
 }
+.card {
+  border: 1px solid #3C3C3C;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 30px;
+}
+.card .card-title {
+  background: #242424;
+  margin: 0px;
+  padding: 20px 40px;
+  font-size: 16px;
+  font-weight: 400;
+}
+.card .card-content {
+  padding: 30px 40px;
+}
+.card-columns {
+  display: flex;
+  flex-wrap: no-wrap;
+  gap: 50px;
+}
+.card-columns > .col-66 {
+  width: 66%;
+}
+.card-columns > .col-33 {
+  width: 33%;
+}
+.card-columns p {
+  margin-top: 0px;
+}
 .portal-main {
   background: #2C2C2C;
   min-height: calc(100vh - 71px);

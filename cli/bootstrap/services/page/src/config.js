@@ -33,6 +33,19 @@ export const config = {
         connectionArgs: {},
     },
 
+    // storage
+    storage: {
+        // driver: s3
+        //driver: 's3',
+        //uploadsUrl: process.env.GLOBAL_STORAGE_UPLOADS_URL,
+
+        // s3
+        //bucket: process.env.GLOBAL_S3_BUCKET,
+        //region: process.env.GLOBAL_AWS_REGION,
+        //accessKeyId: process.env.GLOBAL_AWS_ACCESS_KEY_ID,
+        //secretAccessKey: process.env.GLOBAL_AWS_SECRET_ACCESS_KEY
+    },
+
     // message broker
     message: {
         url: process.env.RABBITMQ_URL,
