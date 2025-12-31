@@ -31,13 +31,13 @@ const router = createBrowserRouter([
 
                     // Users
                     { path: "users", element: <UsersPage /> },
-                    { path: "users/:userId", element: <UserSinglePage /> },
+                    { path: "users/:id", element: <UserSinglePage /> },
 
                     // CMS / Pages
                     { path: "pages", element: <PagesPage /> },
-                    { path: "pages/:pageId", element: <PageSinglePage /> },
+                    { path: "pages/:id", element: <PageSinglePage /> },
                     { path: "blocks", element: <BlocksPage /> },
-                    { path: "blocks/:blockId", element: <BlockSinglePage /> }
+                    { path: "blocks/:id", element: <BlockSinglePage /> }
                 ],
             }
         ]

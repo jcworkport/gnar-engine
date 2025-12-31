@@ -6,4 +6,5 @@ export const fieldTypes = [
     { name: 'Checkbox', value: 'checkbox' },
     { name: 'Date', value: 'date' },
     { name: 'Block', value: 'block' },
+    { name: 'Repeater', value: 'repeater' }
 ];

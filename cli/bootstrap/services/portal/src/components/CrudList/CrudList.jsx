@@ -35,7 +35,7 @@ function CrudList({
         })();
     }, [entityKey, page]);
 
-    const navigateToCrudSingle = (id, entityKey) => {
+    const navigateToCrudSingle = (id) => {
         window.location.href = `/portal/${entityKey}/${id}`;
     }
 

@@ -6,7 +6,7 @@ export const blocks = {
         return data;
     },
 
-    getBlock: async ( id ) => {
+    getSingle: async ( id ) => {
         const { data } = await client.get(`/blocks/${id}`);
         return data;
     },

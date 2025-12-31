@@ -25,10 +25,10 @@ textarea,
 
 button {
     background: @green-main;
-    border: none;
+    border: 1px solid @green-main;
     border-radius: 17px;
     color: @dark-1;
-    padding: 10px 20px;
+    padding: 9px 19px;
     min-width: 143px;
     font-weight: 700;
     transition: opacity 0.3s;
@@ -41,6 +41,12 @@ button {
     &:hover {
         opacity: 0.8;
         cursor: pointer; 
+    }
+
+    &.secondary-btn {
+        background: @dark-2;
+        color: @white;
+        border: 1px solid @dark-grey;
     }
 }
 

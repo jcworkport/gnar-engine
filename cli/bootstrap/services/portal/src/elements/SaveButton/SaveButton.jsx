@@ -25,6 +25,9 @@ function SaveButton({onClick, itemName, loading, error, isNew}) {
                 setDisabled(false);
                 setText(`Save`);
             }, 2000);
+        } else {
+            setDisabled(false);
+            setText('Save');
         }
     }, [loading, error]);
 
