@@ -6,22 +6,22 @@ export const pages = {
         return data;
     },
 
-    getBlock: async ({ id }) => {
+    getSingle: async ( id ) => {
         const { data } = await client.get(`/pages/${id}`);
         return data;
     },
 
-    create: async ({ page }) => {
+    create: async ( page ) => {
         const { data } = await client.post('/pages/', { page });
         return data;
     },
 
-    update: async ({ id, page }) => {
+    update: async ( id, page ) => {
         const { data } = await client.post(`/pages/${id}`, { page });
         return data;
     },
 
-    delete: async ({ id }) => {
+    delete: async ( id ) => {
         await client.delete(`/pages/${id}`);
     }
 };

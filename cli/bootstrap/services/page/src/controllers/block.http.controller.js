@@ -62,7 +62,7 @@ export const httpController = {
 		handler: async (request, reply) => {
 			const params = {
 				id: request.params.id,
-				newBlockData: request.body
+				newBlockData: request.body.block
 			};
 			const result = await commands.execute('updateBlock', params);
 			reply.code(200).send({ page: result });

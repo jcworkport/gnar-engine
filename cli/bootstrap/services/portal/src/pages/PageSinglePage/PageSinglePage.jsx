@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react';
 import Card from '../../layouts/Card/Card';
 import SelectRepeater from '../../elements/SelectRepeater/SelectRepeater';
 import SaveButton from '../../elements/SaveButton/SaveButton';
-import TextInput from '../../components/TextInput/TextInput';
+import TextInput from '../../elements/TextInput/TextInput';
 import CustomSelect from '../../elements/CustomSelect/CustomSelect';
+import PageBlockSwitch from '../../components/PageBlockSwitch/PageBlockSwitch';
+import { pages } from '../../services/page.js';
 import { blocks } from '../../services/block.js';
 import { fieldTypes } from '../../data/pages.data.js';
 import { useParams } from "react-router-dom";
+import { v4 as uuidv4 } from 'uuid';
 
 function PageSinglePage() {
 
@@ -23,6 +26,10 @@ function PageSinglePage() {
         (async () => {
             try {
                 const blocksData = await blocks.getMany();
+                blocksData.blocks = blocksData.blocks.map(b => {
+                    delete b.id;
+                    return b;
+                })
                 setAllBlocks(blocksData.blocks || []);
             } catch (error) {
                 console.error('Error fetching blocks data:', error);
@@ -31,6 +38,10 @@ function PageSinglePage() {
         })();
     }, []);
 
+    useEffect(() => {
+        console.log('Current page blocks:', JSON.stringify(pageBlocks));
+    }, [pageBlocks]);
+
     // fetch data if editing existing
     useEffect(() => {
         if (id && id !== 'new') {
@@ -38,7 +49,7 @@ function PageSinglePage() {
                 setLoading(true);
                 try {
                     let pageData = await pages.getSingle(id);
-                    pageData = pageData.block;
+                    pageData = pageData.page;
                     setPageId(pageData.id);
                     setPageDetails({
                         pageName: pageData.name,
@@ -54,6 +65,119 @@ function PageSinglePage() {
             })();
         }
     }, [id]);
+
+    const updatePageBlocks = (newBlock, parentInstanceId = null, fieldKey = null, remove = false) => {
+
+        if (!newBlock.instanceId) {
+            newBlock.instanceId = uuidv4();
+        }
+
+        let newPageBlocks = [];
+        let foundBlock = false;
+        const blocks = [...pageBlocks];
+
+        console.log('Remove', remove, newBlock);
+
+        const updateBlocksRecursively = (blocks) => {
+            blocks = blocks.map(block => {
+                // found the block, update it
+                if (newBlock.instanceId && block.instanceId === newBlock.instanceId) {
+                    foundBlock = true;
+                    if (remove) {
+                        console.log('Removing block', newBlock);
+                        return null;
+                    }
+                    return newBlock;
+                }
+
+                // check children recursively
+                if (block.fields && block.fields.length > 0) {
+                    return {
+                        ...block,
+                        fields: block.fields.map(field => {
+                            if (field.type === 'repeater' && Array.isArray(field.value)) {
+                                return {
+                                    ...field,
+                                    value: updateBlocksRecursively(field.value)
+                                };
+                            }
+                            return field;
+                        })
+                    };
+                }
+
+                // otherwise return as is
+                return block; 
+            });
+
+            // filter out any nulls (removed blocks)
+            return blocks.filter(b => b !== null);
+        };
+
+        newPageBlocks = updateBlocksRecursively(blocks);
+
+        // add new block
+        if (!foundBlock) {
+            // add to parent
+            if (parentInstanceId && fieldKey) {
+                const addBlockToParentRecursively = (blocks) => {
+                    return blocks.map(block => {
+                        // found the parent block, add to its fields
+                        if (block.instanceId === parentInstanceId) {
+                            console.log('adding to parent instance ', block.instanceId, 'with', newBlock);
+                            return {
+                                ...block,
+                                fields: block.fields.map(field => {
+                                    console.log('checking field', field, fieldKey, field.repeaterType)
+                                    if (field.repeaterType && field.repeaterType === fieldKey) {
+                                        if (!Array.isArray(field.value)) {
+                                            field.value = [];
+                                        }
+
+                                        console.log('WOOP');
+
+                                        return {
+                                            ...field,
+                                            value: [...field.value, newBlock]
+                                        };
+                                    }
+                                    return field;
+                                })
+                            };
+                        }
+
+                        // check children recursively
+                        if (block.fields && block.fields.length > 0) {
+                            return {
+                                ...block,
+                                fields: block.fields.map(field => {
+                                    if (field.type === 'repeater' && Array.isArray(field.value)) {
+                                        return {
+                                            ...field,
+                                            value: addBlockToParentRecursively(field.value)
+                                        };
+                                    }
+                                    return field;
+                                })
+                            };
+                        }
+
+                        // otherwise return as is
+                        return block; 
+                    });
+                };
+
+                newPageBlocks = addBlockToParentRecursively(newPageBlocks);
+            }
+
+            // otherwise top level
+            else {
+                newPageBlocks.push(newBlock);
+            }
+        }
+
+        setPageBlocks(newPageBlocks);
+    }
 
     const validateField = (e) => {
         const value = e.target.value;
@@ -83,7 +207,7 @@ function PageSinglePage() {
         // update existing
         else {
             try {
-                await blocks.update(pageId, {
+                await pages.update(pageId, {
                     name: pageDetails.pageName,
                     key: pageDetails.pageKey,
                     blocks: pageBlocks
@@ -116,8 +240,13 @@ function PageSinglePage() {
 
                     {allBlocks &&
                         <SelectRepeater
-                            items={pageBlocks}
-                            setItems={setPageBlocks}
+                            items={pageBlocks}updatePageBlocks
+                            setItem={(item, index, remove = false) => {
+                                updatePageBlocks({
+                                    ...item,
+                                    fields: item.fields.map(f => ({ ...f }))
+                                }, null, null, remove);
+                            }}
                             selectLabel="Add Block"
                             selectText="Select a block to add"
                             selectOptions={allBlocks}
@@ -126,32 +255,14 @@ function PageSinglePage() {
                                 <Card
                                     title={`Block - ${item.name}`}
                                 >
-                                    {item.fields.map(field => {
-                                        switch (field.type) {
-                                            case 'text':
-                                                return (
-                                                    <TextInput
-                                                        key={field.key}
-                                                        label={field.name}
-                                                        placeholder={`Enter ${field.name}`}
-                                                        value={item.content?.[field.key] || ''}
-                                                        onChange={(e) => {
-                                                            const newItem = { ...item };
-                                                            if (!newItem.content) newItem.content = {};
-                                                            newItem.content[field.key] = e.target.value;
-                                                            setPageBlocks([
-                                                                ...pageBlocks.slice(0, index),
-                                                                newItem,
-                                                                ...pageBlocks.slice(index + 1)
-                                                            ]);
-                                                        }}
-                                                        errorMessage={`Invalid ${field.name}`}
-                                                        isValid={true}
-                                                    />
-                                                );
-                                            break;
-                                        }
-                                    })}
+                                    <PageBlockSwitch
+                                        block={item}
+                                        pageBlocks={pageBlocks}
+                                        updatePageBlocks={updatePageBlocks}
+                                        blockIndex={index}
+                                        allBlocks={allBlocks}
+                                        parentBlockInstanceId={null}
+                                    />
                                 </Card>
                             )}
                         />

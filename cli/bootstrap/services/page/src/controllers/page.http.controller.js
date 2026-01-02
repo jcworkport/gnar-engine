@@ -45,7 +45,8 @@ export const httpController = {
 		preHandler: async (request, reply) => authorise.create(request, reply),
 		handler: async (request, reply) => {
 			const params = {
-				pages: [request.body.page]
+				pages: [request.body.page],
+                requestUser: request.user
 			};
 			const results = await commands.execute('createPages', params);
 			reply.code(200).send({ pages: results });
@@ -62,7 +63,8 @@ export const httpController = {
 		handler: async (request, reply) => {
 			const params = {
 				id: request.params.id,
-				newPageData: request.body
+				newPageData: request.body.page,
+                requestUser: request.user
 			};
 			const result = await commands.execute('updatePage', params);
 			reply.code(200).send({ page: result });

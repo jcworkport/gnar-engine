@@ -7,13 +7,13 @@ export const pageSchema = {
         type: 'object',
         properties: {
             name: { type: 'string' },
-            slug: { type: 'string' },
+            key: { type: 'string' },
             blocks: {
                 type: 'array',
                 items: { $ref: 'pageService.blockSchema' }
             }
         },
-        required: ['name', 'slug'],
+        required: ['name', 'key'],
         additionalProperties: false
     }
 };
@@ -35,11 +35,15 @@ export const blockSchema  = {
                 items: { 
                     oneOf: [
                         { $ref: 'pageService.textInputSchema' },
-                        { $ref: 'pageService.wysiwygSchema' },
-                        { $ref: 'pageService.imageSchema' }
+                        { $ref: 'pageService.richTextSchema' },
+                        { $ref: 'pageService.imageSchema' },
+                        { $ref: 'pageService.blockSchema' },
+                        { $ref: 'pageService.repeaterSchema' }
                     ]
                 }
-            }
+            },
+            type: { type: 'string', enum: ['block'] },
+            instanceId: { type: 'string' }
         },
         required: ['name', 'key'],
         additionalProperties: false
@@ -53,23 +57,25 @@ export const textInputSchema = {
         type: 'object',
         properties: {
             key: { type: 'string' },
-            type: { type: 'string', enum: ['textInput'] },
-            content: { type: 'string' },
+            name: { type: 'string' },
+            type: { type: 'string', enum: ['text'] },
+            value: { type: 'string' }
         },
         required: ['key', 'type'],
         additionalProperties: false
     }
 }
 
-export const wysiwygSchema = {
-    $id: 'pageService.wysiwygSchema',
-    schemaName: 'pageService.wysiwygSchema',
+export const richTextSchema = {
+    $id: 'pageService.richTextSchema',
+    schemaName: 'pageService.richTextSchema',
     schema: {
         type: 'object',
         properties: {
             key: { type: 'string' },
-            type: { type: 'string', enum: ['wysiwyg'] },
-            content: { type: 'string' },
+            name: { type: 'string' },
+            type: { type: 'string', enum: ['richtext'] },
+            value: { type: 'string' }
         },
         required: ['key', 'type'],
         additionalProperties: false
@@ -83,6 +89,7 @@ export const imageSchema = {
         type: 'object',
         properties: {
             key: { type: 'string' },
+            name: { type: 'string' },
             type: { type: 'string', enum: ['image'] },
             url: { type: 'string', format: 'uri' },
             altText: { type: 'string' }
@@ -92,10 +99,33 @@ export const imageSchema = {
     }
 }
 
+export const repeaterSchema = {
+    $id: 'pageService.repeaterSchema',
+    schemaName: 'pageService.repeaterSchema',
+    schema: {
+        type: 'object',
+        properties: {
+            key: { type: 'string' },
+            name: { type: 'string' },
+            type: { type: 'string', enum: ['repeater'] },
+            repeaterType: { type: 'string' },
+            value: { 
+                type: 'array',
+                items: {
+                    $ref: 'pageService.blockSchema'
+                },
+            }
+        },
+        required: ['key', 'type', 'repeaterType'],
+        additionalProperties: false
+    }
+}
+
 schema.addSchema(blockSchema);
 schema.addSchema(textInputSchema);
-schema.addSchema(wysiwygSchema);
+schema.addSchema(richTextSchema);
 schema.addSchema(imageSchema);
+schema.addSchema(repeaterSchema);
 
 export const validatePage = schema.compile(pageSchema);
 export const validateBlock = schema.compile(blockSchema);

@@ -21,3 +21,50 @@
         opacity: 1;
     }
 }
+
+.repeater-row {
+    position: relative;
+    flex-wrap: wrap;
+
+    .nested-block .nested-block {
+        width: 100%;
+        margin-bottom: 0px;
+        position: relative;
+
+        .repeater {
+            box-sizing: border-box;
+            margin-bottom: 60px;
+            border-left: 1px solid @dark-grey;
+            padding-left: 35px;
+        }
+        .repeater-row {
+            justify-content: flex-start;
+        }
+
+        .add-repeater-row {
+            position: absolute;
+            left: 0px;
+            bottom: 10px;
+
+        }
+
+        input[type="text"],
+        input[type="password"],
+        input[type="email"],
+        textarea,
+        .custom-select .custom-select-input {
+            margin-bottom: 0px;
+        }
+    }
+
+    .nested-block {
+        .remove-repeater-row {
+            top: 25px;
+        }
+    }
+    .remove-repeater-row {
+        position: absolute;
+        right: -35px;
+    }
+}
+

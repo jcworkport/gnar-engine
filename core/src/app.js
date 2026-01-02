@@ -103,7 +103,6 @@ const GnarEngine = {
 
 		// Global pre-handlers
 		GnarEngine.http.addHook('onRequest', async (request, reply) => {
-            console.log('onRequest hook');
 		    const { url, method } = request;
 
 			// Append trailing slash internally (no redirect)

@@ -458,6 +458,43 @@ button.secondary-btn {
   cursor: pointer;
   opacity: 1;
 }
+.repeater-row {
+  position: relative;
+  flex-wrap: wrap;
+}
+.repeater-row .nested-block .nested-block {
+  width: 100%;
+  margin-bottom: 0px;
+  position: relative;
+}
+.repeater-row .nested-block .nested-block .repeater {
+  box-sizing: border-box;
+  margin-bottom: 60px;
+  border-left: 1px solid #3C3C3C;
+  padding-left: 35px;
+}
+.repeater-row .nested-block .nested-block .repeater-row {
+  justify-content: flex-start;
+}
+.repeater-row .nested-block .nested-block .add-repeater-row {
+  position: absolute;
+  left: 0px;
+  bottom: 10px;
+}
+.repeater-row .nested-block .nested-block input[type="text"],
+.repeater-row .nested-block .nested-block input[type="password"],
+.repeater-row .nested-block .nested-block input[type="email"],
+.repeater-row .nested-block .nested-block textarea,
+.repeater-row .nested-block .nested-block .custom-select .custom-select-input {
+  margin-bottom: 0px;
+}
+.repeater-row .nested-block .remove-repeater-row {
+  top: 25px;
+}
+.repeater-row .remove-repeater-row {
+  position: absolute;
+  right: -35px;
+}
 .custom-select-cont {
   display: inline-block;
 }
@@ -543,6 +580,87 @@ button.secondary-btn {
 }
 .custom-select.closing {
   z-index: 5;
+}
+.quill {
+  margin-top: 10px;
+}
+.quill .ql-toolbar {
+  border-color: #3C3C3C !important;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+}
+.quill .ql-toolbar button svg * {
+  stroke: #D9D9D9 !important;
+}
+.quill .ql-container {
+  border-color: #3C3C3C !important;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+.quill .ql-editor {
+  min-height: 150px;
+}
+.quill button {
+  min-width: unset;
+}
+.quill .ql-picker .ql-picker-label {
+  border: none !important;
+}
+.quill .ql-picker-options {
+  background: #242424 !important;
+  border-color: #3C3C3C !important;
+}
+.ql-snow.ql-toolbar button:hover,
+.ql-snow .ql-toolbar button:hover,
+.ql-snow.ql-toolbar button:focus,
+.ql-snow .ql-toolbar button:focus,
+.ql-snow.ql-toolbar button.ql-active,
+.ql-snow .ql-toolbar button.ql-active,
+.ql-snow.ql-toolbar .ql-picker-label:hover,
+.ql-snow .ql-toolbar .ql-picker-label:hover,
+.ql-snow.ql-toolbar .ql-picker-label.ql-active,
+.ql-snow .ql-toolbar .ql-picker-label.ql-active,
+.ql-snow.ql-toolbar .ql-picker-item:hover,
+.ql-snow .ql-toolbar .ql-picker-item:hover,
+.ql-snow.ql-toolbar .ql-picker-item.ql-selected,
+.ql-snow .ql-toolbar .ql-picker-item.ql-selected {
+  color: #47DCA6 !important;
+}
+.image-input {
+  position: relative;
+}
+.image-input > .flex-row {
+  margin-top: 10px;
+  flex-direction: row-reverse;
+  gap: 0px;
+}
+.image-input .upload-area {
+  border-color: #3C3C3C !important;
+  min-width: 190px;
+  margin-bottom: auto;
+  flex-grow: 2;
+}
+.image-input .preview-area .image-preview {
+  margin-right: 35px;
+}
+.image-input .preview-area .image-preview img {
+  max-width: 100%;
+  object-fit: contain;
+}
+.image-input .icon-delete {
+  min-width: 20px;
+  min-height: 20px;
+  display: inline-block;
+  background-size: contain;
+  background-repeat: no-repeat;
+  position: absolute;
+  right: -25px;
+  top: -3px;
+  opacity: 0.7;
+}
+.image-input .icon-delete:hover {
+  cursor: pointer;
+  opacity: 1;
 }
 .login-page {
   width: 100%;

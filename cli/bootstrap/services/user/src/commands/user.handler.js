@@ -76,7 +76,6 @@ commands.register('userService.getAuthenticatedUser', async ({token}) => {
     const user_id = await auth.getAuthenticatedUser(token);
 
     if (user_id) {
-        logger.info('Auth user: ' + user_id);
         const userObj = await user.getById({id: user_id});
 
         if (userObj) {

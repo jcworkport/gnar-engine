@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Card from '../../layouts/Card/Card';
 import Repeater from '../../elements/Repeater/Repeater';
 import SaveButton from '../../elements/SaveButton/SaveButton';
-import TextInput from '../../components/TextInput/TextInput';
+import TextInput from '../../elements/TextInput/TextInput';
 import CustomSelect from '../../elements/CustomSelect/CustomSelect';
 import { blocks } from '../../services/block.js';
 import { fieldTypes } from '../../data/pages.data.js';

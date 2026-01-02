@@ -7,7 +7,7 @@ export const page = {
     getAll: async () => {
         try {
             const items = await db.collection('pages').find().toArray();
-            return items;
+            return items.map(mappings);
         } catch (error) {
             logger.error("Error fetching pages:", error);
             throw error;
@@ -19,7 +19,8 @@ export const page = {
         try {
             const collection = db.collection('pages');
             const result = await collection.insertOne(data);
-            return await collection.findOne({ _id: result.insertedId });
+            const insterted = await collection.findOne({ _id: result.insertedId });
+            return mappings(insterted);
         } catch (error) {
             logger.error("Error creating page:", error);
             throw error;
@@ -32,7 +33,7 @@ export const page = {
             const collection = db.collection('pages');
             const objectId = new ObjectId(id);
             const item = await collection.findOne({ _id: objectId });
-            return item;
+            return mappings(item);
         } catch (error) {
             logger.error("Error fetching page:", error);
             throw error;
@@ -68,3 +69,15 @@ export const page = {
         }
     }
 };
+
+const mappings = (item) => {
+    if (!item) {
+        return item;
+    }
+
+    // _id -> id
+    const { _id, ...rest } = item;
+    item = { id: _id.toString(), ...rest };
+    
+    return item;
+}

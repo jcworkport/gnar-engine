@@ -36,7 +36,7 @@ commands.register('pageService.createBlocks', async ({ blocks }) => {
             continue;
         }
 
-        const created = await page.create(newData);
+        const created = await block.create(newData);
         createdNewBlocks.push(created);
     }
 
@@ -51,35 +51,34 @@ commands.register('pageService.createBlocks', async ({ blocks }) => {
  * Update block
  */
 commands.register('pageService.updateBlock', async ({id, newBlockData}) => {
-    
+
     const validationErrors = [];
-    
+
     if (!id) {
         throw new error.badRequest('Block ID required');
-    
     }
-    
+
     const obj = await block.getById({id: id});
-    
+
     if (!obj) {
         throw new error.notFound('Block not found');
     }
-    
+
     delete newBlockData.id;
-    
-    const { errors } = validateBlockUpdate(newBlockData);
-    
+
+    const { errors } = validateBlock(newBlockData);
+
     if (errors?.length) {
         validationErrors.push(errors);
     }
-    
+
     if (validationErrors.length) {
         throw new error.badRequest(`Invalid block data: ${validationErrors}`);
     }
-    
+
     return await block.update({
         id: id,
-        ...newBlockData
+        updatedData: newBlockData
     });
 });
 
