@@ -393,7 +393,6 @@ async function createDynamicDockerCompose({ config, secrets, gnarHiddenDir, proj
     // add mongo hosts if required
     if (mongoHostsRequired.length > 0) {
         for (const host of mongoHostsRequired) {
-            console.log('should add ', host);
             if (services[host]) {
                 continue;
             }
