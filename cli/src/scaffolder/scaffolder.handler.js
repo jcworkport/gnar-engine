@@ -3,7 +3,10 @@ import fs from 'fs';
 import yaml from 'js-yaml';
 import { profiles } from '../profiles/profiles.client.js';
 import { helpers } from '../helpers/helpers.js';
+import { directories } from '../cli.js';
 import Handlebars from 'handlebars';
+
+
 
 /**
  * Gnar Engine Scaffolder
@@ -32,10 +35,9 @@ export const scaffolder = {
         fs.mkdirSync(serviceDir, { recursive: true });
 
         // Get all files in the templates directory
-        const templatesDir = path.join(import.meta.dirname, '../../templates/service');
         const templateFiles = scaffolder.getAllTemplateFiles({
-            dir: templatesDir,
-            baseDir: templatesDir
+            dir: directories.scaffolderTemplates,
+            baseDir: directories.scaffolderTemplates
         }); 
 
         // Register Handlebars helpers
@@ -136,6 +138,25 @@ export const scaffolder = {
 
         // Create the service directory
         fs.mkdirSync(serviceDir, { recursive: true });
+
+        // Add to deploy.yml
+        scaffolder.scaffoldServiceDeployYml({
+            deployPath: path.join(projectDir, 'deploy.localdev.yml'),
+            serviceName: serviceName,
+            database: null
+        });
+        
+        // Scaffold secrets
+        scaffolder.scaffoldServiceSecrets({
+            secretsPath: path.join(projectDir, 'secrets.localdev.yml'),
+            serviceName: serviceName,
+            database: null
+        });
+
+        return {
+            message: `Front-end service "${serviceName}" created successfully at ${serviceDir}`,
+            servicePath: serviceDir
+        };
     },
 
     /**
@@ -284,13 +305,17 @@ export const scaffolder = {
         const parsedSecrets = yaml.load(rawSecrets);
 
         // generate random passwords
-        Object.keys(parsedSecrets.services).forEach(serviceName => {
-            Object.keys(parsedSecrets.services[serviceName]).forEach(key => {
-                if (key.toLowerCase().includes('pass')) {
-                    parsedSecrets.services[serviceName][key] = helpers.generateRandomString(16);
-                }
+        try {
+            Object.keys(parsedSecrets.services).forEach(serviceName => {
+                Object.keys(parsedSecrets.services[serviceName]).forEach(key => {
+                    if (key.toLowerCase().includes('pass')) {
+                        parsedSecrets.services[serviceName][key] = helpers.generateRandomString(16);
+                    }
+                });
             });
-        });
+        } catch (error) {
+            throw new Error('Error generating random passwords for project secrets: ' + error.message);
+        }
 
         // set random root api key
         const cliApiKey = helpers.generateRandomString(32);
@@ -328,15 +353,14 @@ export const scaffolder = {
                 parsedSecrets.services[serviceName]['MYSQL_USER'] = serviceName + '_user';
                 parsedSecrets.services[serviceName]['MYSQL_PASSWORD'] = helpers.generateRandomString(16);
                 parsedSecrets.services[serviceName]['MYSQL_DATABASE'] = serviceName + '_db';
-                parsedSecrets.services[serviceName]['MYSQL_HOST'] = serviceName + '-db';
-                parsedSecrets.services[serviceName]['MYSQL_RANDOM_ROOT_PASSWORD'] = helpers.generateRandomString(16);
+                parsedSecrets.services[serviceName]['MYSQL_HOST'] = 'db-mysql';
                 break;
             case 'mongodb':
                 const mongoPassword = helpers.generateRandomString(16);
                 const mongoRootPassword = helpers.generateRandomString(16);
                 const mongoUser = serviceName + '_user';
                 const mongoDatabase = serviceName + '_db';
-                const mongoHost = serviceName + '-db';
+                const mongoHost = 'db-mongo';
                 const mongoUrl = `mongodb://${mongoUser}:${mongoPassword}@${mongoHost}:27017/${mongoDatabase}`;
 
                 parsedSecrets.services[serviceName]['MONGO_URL'] = mongoUrl;
@@ -347,8 +371,9 @@ export const scaffolder = {
                 parsedSecrets.services[serviceName]['MONGO_HOST'] = mongoHost;
                 break;
             default:
-                throw new Error(`Unsupported database type in secret scaffolder: ${database}`);
-        }
+                // no db
+                break;
+            }
 
         // save updated secrets file
         const newSecretsContent = yaml.dump(parsedSecrets);
@@ -411,7 +436,7 @@ export const scaffolder = {
         // add database service if required
         if (database) {
             serviceConfig.depends_on = [
-                `${serviceName}-db`
+                `db-${database}`
             ]
         }
 

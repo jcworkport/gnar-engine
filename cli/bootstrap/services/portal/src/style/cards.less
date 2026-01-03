@@ -1,0 +1,57 @@
+.card {
+    border: 1px solid #3C3C3C;
+    border-radius: 10px;
+    margin-bottom: 30px;
+    width: 100%;
+
+    .card-title {
+        background: #242424;
+        margin: 0px;
+        padding: 20px 40px;
+        font-size: 16px;
+        font-weight: 400;
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+        overflow: hidden;
+    }
+    
+    .card-content {
+        padding: 30px 40px;
+    }
+
+    .instruction {
+        color: @mid-grey;
+        margin-bottom: 30px;
+    }
+}
+
+.card-columns {
+    display: flex;
+    flex-wrap: no-wrap;
+    gap: 50px;
+    
+    & > .col-66 {
+        width: 66%;
+    }
+    
+    & > .col-33 {
+        width: 33%;
+    }   
+    p {
+        margin-top: 0px;
+    }
+}
+
+.card {
+    input[type="text"],
+    input[type="password"],
+    input[type="email"],
+    textarea {
+        margin-top: 8px;
+        background: @dark-3; 
+
+        &::placeholder {
+            color: @light-grey; 
+        }
+    }
+}

@@ -1,0 +1,52 @@
+input[type="text"],
+input[type="password"],
+input[type="email"],
+textarea,
+.custom-select .custom-select-input {
+    border: 1px solid @dark-grey;
+    border-radius: 17px;
+    padding: 8px 10px;
+    font-size: 14px;
+    width: 100%;
+    box-sizing: border-box;
+    background: none;
+    margin-bottom: 25px;
+    transition: border-color 0.3s;
+
+    &::placeholder {
+        color: @white;
+    }
+
+    &:focus {
+        outline: none;
+        border-color: @green-main;
+    }
+}
+
+button {
+    background: @green-main;
+    border: 1px solid @green-main;
+    border-radius: 17px;
+    color: @dark-1;
+    padding: 9px 19px;
+    min-width: 143px;
+    font-weight: 700;
+    transition: opacity 0.3s;
+
+    &[type="submit"] {
+        margin-top: 25px;
+        margin-bottom: 25px;
+    }
+
+    &:hover {
+        opacity: 0.8;
+        cursor: pointer; 
+    }
+
+    &.secondary-btn {
+        background: @dark-2;
+        color: @white;
+        border: 1px solid @dark-grey;
+    }
+}
+

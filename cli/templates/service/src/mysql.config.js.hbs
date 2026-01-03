@@ -5,6 +5,10 @@ export const config = {
     // service name
     serviceName: '{{serviceName}}Service',
 
+    // environment
+    environment: process.env.{{upperCase serviceName}}_NODE_ENV || 'dev',
+    runTests: process.env.{{upperCase serviceName}}_RUN_TESTS || false,
+
     // microservice | modular-monolith
     architecture: process.env.GLOBAL_ARCHITECTURE || 'microservice',
 

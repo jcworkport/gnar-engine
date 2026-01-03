@@ -11,6 +11,8 @@ import { setRabbitConnectionUrl } from './services/rabbit.js';
 import { messageAwaitResponse, messageAndForget } from './services/message.service.js';
 import { wsManager } from './services/websocket.service.js';
 import schemaService from './services/schema.service.js';
+import { testService } from './services/test.service.js';
+import { storageService } from './services/storage.service.js';
 import { manifest } from './commands/command-manifest.js';
 import { v4 as uuidv4 } from 'uuid';
 import { v5 as uuidv5 } from 'uuid';
@@ -34,7 +36,9 @@ const GnarEngine = {
 
 		// Initialise http server
 		GnarEngine.http = httpController;
-		await GnarEngine.http.init(config.http);
+        if (config.http) {
+            await GnarEngine.http.init(config.http);
+        }
 
 		// Initialise command bus
 		GnarEngine.commands = commandBus;
@@ -44,7 +48,7 @@ const GnarEngine = {
 		try { 
 			GnarEngine.db = await initDbConnection(config.db);
 		} catch (err) {
-			loggerService.error('Error connecting to MongoDB: ' + err);
+			loggerService.error('Error connecting to database: ' + err);
 			process.exit(1);
 		}
 
@@ -111,14 +115,16 @@ const GnarEngine = {
             // set authenticated user
 			const authHeader = request.raw.headers.authorization || '';
 			const token = authHeader ? authHeader.split(' ')[1] : '';
-			
+		
 			if (token) {
 				// get authenticated user from authentication service
-				const { user } = await GnarEngine.commands.execute('userService.getAuthenticatedUser', {
+				const userResult = await GnarEngine.commands.execute('userService.getAuthenticatedUser', {
 					token: token
 				})
 
-				request.user = user;
+                if (userResult) {
+				    request.user = userResult;
+                }
 			}
 		});
 
@@ -137,10 +143,28 @@ const GnarEngine = {
 				}
 			}
 		}
+
+        // Tests
+        GnarEngine.test = testService;
+
+        // Storage
+        if (config.storage && config.storage.driver) {
+            storageService.init(config.storage);
+            GnarEngine.storage = storageService;
+        } else {
+            const storageError = () => {
+                throw new Error('Storage service not configured - please configure storage in config.js')
+            }
+            GnarEngine.storage = {
+                upload: storageError,
+                download: storageError,
+                getUrl: storageError
+            }
+        }
 	}
 }
 
 await GnarEngine.init(config);
 
 export default GnarEngine;
-export const { commands, http, message, db, schema, logger, error, utils, registerService, webSockets } = GnarEngine;
+export const { commands, http, message, db, schema, logger, error, utils, registerService, webSockets, test, storage } = GnarEngine;

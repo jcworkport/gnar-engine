@@ -6,6 +6,7 @@ import { registerDevCommands } from './dev/commands.js';
 import { registerControlCommands } from './control/commands.js';
 import { registerScaffolderCommands } from './scaffolder/commands.js';
 import { registerAgentCommands } from './agent/commands.js';
+import path from 'path';
 
 // Create a new program
 const program = new Command();
@@ -28,3 +29,10 @@ G n a r  E n g i n e -  A powerful, AI ready microservice framework for modern a
 
 // Parse CLI input
 program.parse(process.argv);
+
+// Consts
+export const directories = {
+    scaffolderTemplates: path.join(import.meta.dirname, '../templates/service'),
+    bootstrap: path.join(import.meta.dirname, '../bootstrap'),
+    provisioner: path.join(import.meta.dirname, './provisioner')
+}

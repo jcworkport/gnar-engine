@@ -13,7 +13,7 @@ config:
       min_tasks: 1
       max_tasks: 1
       depends_on:
-        - control-db
+        - db-mysql
       command:
         - npm
         - run
@@ -28,11 +28,38 @@ config:
       min_tasks: 1
       max_tasks: 1
       depends_on:
-        - user-db
+        - db-mysql
       command:
         - npm
         - run
         - start:dev
       ports:
         - '4002:3000'
-
+    - name: portal
+      listener_rules:
+        paths:
+          - /portal
+      min_tasks: 1
+      max_tasks: 1
+      command:
+        - npm
+        - run
+        - dev
+        - '-- --host'
+      ports:
+        - '4003:5173'
+    - name: page
+      listener_rules:
+        paths:
+          - /pages
+          - /blocks
+      min_tasks: 1
+      max_tasks: 1
+      command:
+        - npm
+        - run
+        - start:dev
+      ports:
+        - '4004:3000'
+      depends_on:
+        - db-mongo

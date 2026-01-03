@@ -119,7 +119,7 @@ export const registerScaffolderCommands = (program) => {
                     console.log('Creating new service in... ' + activeProfile.profile.PROJECT_DIR);
 
                     scaffolder.createNewFrontEndService({
-                        serviceName: options.service,
+                        serviceName: service,
                         projectDir: activeProfile.profile.PROJECT_DIR
                     });
                 } catch (error) {

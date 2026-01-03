@@ -80,7 +80,7 @@ commands.register('{{serviceName}}Service.update{{pascalCase serviceName}}', asy
     
     return await {{serviceName}}.update({
         id: id,
-        ...new{{pascalCase serviceName}}Data
+        updatedData: new{{pascalCase serviceName}}Data
     });
 });
 

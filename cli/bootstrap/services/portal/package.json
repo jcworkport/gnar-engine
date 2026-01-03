@@ -1,0 +1,33 @@
+{
+  "name": "portal",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "build:style": "lessc --strict-imports src/style/main.less src/css/style.css",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@reduxjs/toolkit": "^2.10.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "axios": "^1.13.2",
+    "react-redux": "^9.2.0",
+    "react-router-dom": "^7.9.6",
+    "react-quill-new": "^3.7.0",
+    "crypto-js": "^4.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@vitejs/plugin-react": "^5.1.0",
+    "globals": "^16.5.0",
+    "less": "^4.4.2",
+    "lessc": "^1.0.2",
+    "vite": "^7.2.2",
+    "uuid": "^11.1.0"
+  }
+}

@@ -1,0 +1,51 @@
+.login-page {
+    width: 100%;
+    max-width: 100%;
+    height: 100vh;
+    gap: 0px;
+    
+    .login-left-panel {
+        min-width: 50%;
+        background: url('../assets/login-green-rad-back-1.jpg');
+        background-size: cover;
+        background-position: center center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .login-right-panel {
+        min-width: 50%;
+        background: @dark-1;
+        padding: 135px;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .username,
+    .password {
+        padding-left: 50px;
+        position: relative;
+        background-repeat: no-repeat;
+        background-position: 12px center;
+        background-size: 18px 18px;
+    }
+
+    .username {
+        background-image: url('../assets/icon-user.svg');
+    }
+
+    .password {
+        background-image: url('../assets/icon-padlock.svg');
+    }
+
+    .login-form {
+        max-width: 450px;
+    }
+
+    .forgotten-password {
+        width: 100%; 
+    }
+}

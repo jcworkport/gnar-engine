@@ -1,0 +1,89 @@
+import { commands } from '@gnar-engine/core';
+import { authorise } from '../policies/page.policy.js';
+
+/**
+ * HTTP controller
+ */
+export const httpController = {
+
+	/**
+	 * Get single page
+	 */
+	getSingle: {
+		method: 'GET',
+		url: '/pages/:id',
+		preHandler: async (request, reply) => authorise.getSingle(request, reply),
+		handler: async (request, reply) => {
+			const params = {
+				id: request.params.id
+			};
+			const result = await commands.execute('getSinglePage', params);
+			reply.code(200).send({ page: result });
+		}
+	},
+
+	/**
+	 * Get multiple pages
+	 */
+	getMany: {
+		method: 'GET',
+		url: '/pages/',
+		preHandler: async (request, reply) => authorise.getMany(request, reply),
+		handler: async (request, reply) => {
+			const params = {};
+			const results = await commands.execute('getManyPages', params);
+			reply.code(200).send({ pages: results });
+		}
+	},
+
+	/**
+	 * Create new page
+	 */
+	create: {
+		method: 'POST',
+		url: '/pages/',
+		preHandler: async (request, reply) => authorise.create(request, reply),
+		handler: async (request, reply) => {
+			const params = {
+				pages: [request.body.page],
+                requestUser: request.user
+			};
+			const results = await commands.execute('createPages', params);
+			reply.code(200).send({ pages: results });
+		},
+	},
+
+	/**
+	 * Update page
+	 */
+	update: {
+		method: 'POST',
+		url: '/pages/:id',
+		preHandler: async (request, reply) => authorise.update(request, reply),
+		handler: async (request, reply) => {
+			const params = {
+				id: request.params.id,
+				newPageData: request.body.page,
+                requestUser: request.user
+			};
+			const result = await commands.execute('updatePage', params);
+			reply.code(200).send({ page: result });
+		},
+	},
+
+	/**
+	 * Delete page
+	 */
+	delete: {
+		method: 'DELETE',
+		url: '/pages/:id',
+		preHandler: async (request, reply) => authorise.delete(request, reply),
+		handler: async (request, reply) => {
+			const params = {
+				id: request.params.id
+			};
+			await commands.execute('deletePage', params);
+			reply.code(200).send({ message: 'Page deleted' });
+		},
+	},
+}

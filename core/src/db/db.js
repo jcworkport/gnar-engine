@@ -20,7 +20,11 @@ export const initDbConnection = async (config) => {
         switch (config.type) {
             case 'mongodb':
                 return await initMongoDbConnection({
-                    connectionUrl: config.connectionUrl,
+                    host: config.host,
+                    user: config.user,
+                    password: config.password,
+                    database: config.database,
+                    port: config.port,
                     connectionArgs: config.connectionArgs
                 });
 
@@ -47,13 +51,19 @@ export const initDbConnection = async (config) => {
  * Initialises a connection to MongoDB.
  * 
  * @param {Object} config - MongoDB connection configuration.
- * @param {string} connectionUrl - The MongoDB connection URL.
+ * @param {string} config.host - MongoDB host
+ * @param {string} config.user - MongoDB user
+ * @param {string} config.password - MongoDB password
+ * @param {string} config.database - MongoDB database name
+ * @param {number} config.port - MongoDB port
  * @param {Object} [connectionArgs={}] - Additional connection options.
  * @returns {Promise<MongoClient>} The MongoDB client.
  */
-const initMongoDbConnection = async ({connectionUrl, connectionArgs = {}}) => {
+const initMongoDbConnection = async ({host, user, password, database, port = 27017, connectionArgs = {}}) => {
     try {
         loggerService.info('Connecting to mongo..');
+        const connectionUrl = `mongodb://${user}:${encodeURIComponent(password)}@${host}:${port}/${database}`;
+        loggerService.info(`MongoDB connection URL: ${connectionUrl}`);
         const dbClient = await MongoClient.connect(connectionUrl, connectionArgs);
         db = dbClient.db();
 
