@@ -41,5 +41,5 @@ Setting the project directory to be the cli/bootstrap directory, means that you 
     gnar dev up --core-dev --build
 ```
 
-The --core-dev flag volume mounts the bundled core to your services (as apposed to the the installing the core package from the NPM registry at build time). It is still nesseccary to bundle the core code after making changes as it is the bundle that it is mounted not the source.
+The --core-dev flag volume mounts the bundled core to your services (as apposed to the the installing the core package from the NPM registry at build time). It is still necessary to bundle the core code after making changes as it is the bundle that it is mounted not the source.
 
