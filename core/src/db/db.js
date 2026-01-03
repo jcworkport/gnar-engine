@@ -63,7 +63,7 @@ const initMongoDbConnection = async ({host, user, password, database, port = 270
     try {
         loggerService.info('Connecting to mongo..');
         const connectionUrl = `mongodb://${user}:${encodeURIComponent(password)}@${host}:${port}/${database}`;
-                console.log('connectionurl', connectionUrl);
+        loggerService.info(`MongoDB connection URL: ${connectionUrl}`);
         const dbClient = await MongoClient.connect(connectionUrl, connectionArgs);
         db = dbClient.db();
 
