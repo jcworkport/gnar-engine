@@ -354,7 +354,6 @@ export const scaffolder = {
                 parsedSecrets.services[serviceName]['MYSQL_PASSWORD'] = helpers.generateRandomString(16);
                 parsedSecrets.services[serviceName]['MYSQL_DATABASE'] = serviceName + '_db';
                 parsedSecrets.services[serviceName]['MYSQL_HOST'] = 'db-mysql';
-                parsedSecrets.services[serviceName]['MYSQL_ROOT_PASSWORD'] = helpers.generateRandomString(16);
                 break;
             case 'mongodb':
                 const mongoPassword = helpers.generateRandomString(16);
