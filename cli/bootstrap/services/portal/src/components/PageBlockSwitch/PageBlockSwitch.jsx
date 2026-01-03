@@ -62,7 +62,6 @@ function PageBlockSwitch({ block, pageBlocks, updatePageBlocks, blockIndex, allB
                                 label={field.name}
                                 value={field.value || ''}
                                 onChange={(base64File, mimeType, fileName) => {
-                                    console.log('image field change value:', value);
                                     const newBlock = {
                                         ...block,
                                         fields: block.fields.map(f => ({ ...f }))

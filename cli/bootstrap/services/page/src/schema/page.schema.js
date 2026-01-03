@@ -91,7 +91,15 @@ export const imageSchema = {
             key: { type: 'string' },
             name: { type: 'string' },
             type: { type: 'string', enum: ['image'] },
-            url: { type: 'string', format: 'uri' },
+            value: {
+                type: 'object',
+                properties: {
+                    file: { type: 'string' },
+                    mimeType: { type: 'string' },
+                    fileName: { type: 'string' },
+                    url: { type: 'string' }
+                }
+            },
             altText: { type: 'string' }
         },
         required: ['key', 'type'],

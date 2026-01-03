@@ -151,6 +151,15 @@ const GnarEngine = {
         if (config.storage && config.storage.driver) {
             storageService.init(config.storage);
             GnarEngine.storage = storageService;
+        } else {
+            const storageError = () => {
+                throw new Error('Storage service not configured - please configure storage in config.js')
+            }
+            GnarEngine.storage = {
+                upload: storageError,
+                download: storageError,
+                getUrl: storageError
+            }
         }
 	}
 }

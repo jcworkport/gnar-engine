@@ -5,6 +5,7 @@ export const storageService = {
 
     driverName: '',
     driver: null,
+    uploadsUrl: '',
 
     /**
      * @param {Object} config — Storage configuration
@@ -26,6 +27,7 @@ export const storageService = {
             }
 
             await storageService.driver.init(config);
+            storageService.uploadsUrl = config.uploadsUrl || '';
         } catch (error) {
             loggerService.error(`Storage initialization error: ${error.message}`);
             throw error;
@@ -41,7 +43,8 @@ export const storageService = {
      */
     upload: async ({file, key, contentType, metadata}) => {
         try {
-            return await storageService.driver.upload({file, key, contentType, metadata});
+            const returnedKey = await storageService.driver.upload({file, key, contentType, metadata});
+            return `${storageService.uploadsUrl}/${returnedKey}`;
         } catch (error) {
             loggerService.error(`Storage upload error: ${error.message}`);
             throw error;

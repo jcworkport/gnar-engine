@@ -36,7 +36,7 @@ commands.register('pageService.createPages', async ({ pages, requestUser }) => {
             continue;
         }
 
-        newData = command.execute('processUploadsInData', { data: newData, requestUser });
+        newData = await commands.execute('processUploadsInData', { data: newData, requestUser });
 
         const created = await page.create(newData);
         createdNewPages.push(created);
@@ -80,7 +80,7 @@ commands.register('pageService.updatePage', async ({id, newPageData, requestUser
         throw new error.badRequest(`Invalid page data: ${validationErrors}`);
     }
 
-    newPageData = command.execute('processUploadsInData', { data: newPageData, requestUser });
+    newPageData = await commands.execute('processUploadsInData', { data: newPageData, requestUser });
 
     return await page.update({
         id: id,
@@ -118,6 +118,8 @@ commands.register('pageService.processUploadsInData', async ({ data, requestUser
             for (const [key, value] of Object.entries(data)) {
                 if (key === 'file' && typeof value === 'string') {
 
+                    logger.info('Processing file upload in page data');
+
                     // Filename
                     const fileName = result.fileName || `upload_${Date.now()}`;
 
@@ -136,11 +138,11 @@ commands.register('pageService.processUploadsInData', async ({ data, requestUser
                     // Upload
                     const url = await storage.upload({
                         file: Buffer.from(base64Data, 'base64'),
-                        key: 'page-content/' + fileName,
+                        key: 'public/page-content/' + fileName,
                         contentType: mimeType,
                         metadata: {
-                        uploadedAt: new Date().toISOString(),
-                        uploadedBy: requestUser ? requestUser.id : 'unknown'
+                            uploadedAt: new Date().toISOString(),
+                            uploadedBy: requestUser ? requestUser.id : 'unknown'
                         }
                     });
 

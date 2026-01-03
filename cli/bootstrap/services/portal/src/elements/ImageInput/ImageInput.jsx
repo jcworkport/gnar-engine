@@ -31,14 +31,14 @@ function ImageInput({ key, label, value: uploadedImages, onChange: setUploadedIm
             const base64File = await fileToBase64(file);
             setUploadedImages(base64File, mimeType, fileName);
         })();
-    };
+    }
 
     const handleFileChange = (event) => {
         const files = event.target.files;
         if (files) {
             handleFileSelection(files);
         }
-    };
+    }
 
     const handleDrop = (event) => {
         event.preventDefault();
@@ -46,7 +46,7 @@ function ImageInput({ key, label, value: uploadedImages, onChange: setUploadedIm
         if (files) {
             handleFileSelection(files);
         }
-    };
+    }
 
     const handleRemoveFile = (index) => {
         setSelectedFiles((prev) => {
@@ -55,13 +55,19 @@ function ImageInput({ key, label, value: uploadedImages, onChange: setUploadedIm
             return updatedFiles;
         });
         setImagePreviews((prev) => prev.filter((_, i) => i !== index));
-    };
+    }
+
+    useEffect(() => {
+        if (uploadedImages?.url) {
+            setImagePreviews([uploadedImages.url]);
+        }
+    }, [uploadedImages])
 
     useEffect(() => {
         return () => {
             imagePreviews.forEach((preview) => URL.revokeObjectURL(preview));
         };
-    }, [imagePreviews]);
+    }, [imagePreviews])
 
     return (
         <div className="image-input">

@@ -36,14 +36,14 @@ export const config = {
     // storage
     storage: {
         // driver: s3
-        //driver: 's3',
-        //uploadsUrl: process.env.GLOBAL_STORAGE_UPLOADS_URL,
+        driver: 's3',
+        uploadsUrl: process.env.UPLOADS_URL,
 
         // s3
-        //bucket: process.env.GLOBAL_S3_BUCKET,
-        //region: process.env.GLOBAL_AWS_REGION,
-        //accessKeyId: process.env.GLOBAL_AWS_ACCESS_KEY_ID,
-        //secretAccessKey: process.env.GLOBAL_AWS_SECRET_ACCESS_KEY
+        bucket: process.env.S3_BUCKET,
+        region: process.env.AWS_REGION,
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
     },
 
     // message broker
