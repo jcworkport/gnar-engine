@@ -13,7 +13,7 @@ cd "$CLI_DIR"
 npm install
 
 # Link CLI to custom global folder
-npm link --prefix "$TARGET_DIR"
+npm link
 
 # Bin path for npm link
 BIN_PATH="$TARGET_DIR/bin"
