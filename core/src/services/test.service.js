@@ -1,4 +1,5 @@
 import { loggerService } from "./logger.service.js";
+import { resetMongoDb, resetMysqlDb, dbType } from '../db/db.js';
 import assert from 'assert';
 import fs from 'fs';
 import path from 'path';
@@ -72,7 +73,6 @@ export const testService = {
         }
 
         // Summary
-        
         console.table(testService.testResults.map(result => ({
             Test: result.name,
             Result: result.error ? `❌ Failed - ${result.error.message}` : '✅ Passed'
@@ -82,6 +82,21 @@ export const testService = {
             console.error(`❌ Some Integration tests failed: ${testService.failed} error(s)`);
         } else {
             console.log('✅ All integration tests passed!');
+        }
+
+        // Reset test databases
+        try {
+            switch (dbType) {
+                case 'mongodb':
+                    await resetMongoDb();
+                    break;
+                case 'mysql':
+                    await resetMysqlDb();
+                    break;
+            }
+        } catch (error) {
+            loggerService.error('Error resetting test database: ' + error.message);
+            throw error;
         }
     }
 }

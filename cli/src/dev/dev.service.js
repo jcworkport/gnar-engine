@@ -235,6 +235,7 @@ async function createDynamicDockerCompose({ config, secrets, gnarHiddenDir, proj
             if (secrets.services?.[svc.name]) {
                 secrets.services[svc.name].NODE_ENV = 'test';
 
+                console.log(testService, svc.name);
                 if (testService && svc.name === testService) {
                     secrets.services[svc.name].RUN_TESTS = 'true';
                 }

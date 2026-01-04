@@ -13,7 +13,7 @@ export function registerDevCommands(program) {
 		.option('-b, --build', 'Ruild without cache')
         .option('-d, --detach', 'Run containers in background')
         .option('-t --test', 'Run the tests with ephemeral databases')
-        .option('--test-service <service>', 'Run the tests for the specified service with ephemeral databases')
+        .option('--test-service <service>', 'Run the tests for the specified service with ephemeral databases (e.g. --test-service user)')
         .addOption(new Option('--core-dev').hideHelp())
         .action(async (options) => {
 			let response = {};
