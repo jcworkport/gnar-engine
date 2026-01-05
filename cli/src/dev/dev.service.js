@@ -17,13 +17,13 @@ const docker = new Docker();
  * @param {object} options
  * @param {string} options.projectDir - The project directory
  * @param {boolean} [options.build=false] - Whether to re-build images
- * @param {boolean} [options.detached=false] - Whether to run containers in background
+ * @param {boolean} [options.detach=false] - Whether to run containers in background
  * @param {boolean} [options.coreDev=false] - Whether to run in core development mode (requires access to core source)
  * @param {boolean} [options.test=false] - Whether to run tests with ephemeral databases
  * @param {string} [options.testService=''] - The service to run tests for (only applicable if test=true)
  * @param {boolean} [options.removeOrphans=true] - Whether to remove orphaned containers
  */
-export async function up({ projectDir, build = false, detached = false, coreDev = false, test = false, testService = '', removeOrphans = true }) {
+export async function up({ projectDir, build = false, detach = false, coreDev = false, test = false, testService = '', removeOrphans = true }) {
     
     // core dev
     if (coreDev) {
@@ -74,7 +74,7 @@ export async function up({ projectDir, build = false, detached = false, coreDev 
         args.push("--build");
     }
 
-    if (detached) {
+    if (detach) {
         args.push("-d");
     }
 
@@ -111,11 +111,11 @@ export async function up({ projectDir, build = false, detached = false, coreDev 
  */
 export async function down({ projectDir, allContainers = false }) {
     // list all containers
-    const containers = await docker.listContainers();
+    let containers = await docker.listContainers();
 
     // filter containers by image name
     if (!allContainers) {
-        const containers = containers.filter(c => c.Image.includes("ge-dev"));
+        containers = containers.filter(c => c.Image.includes("ge-localdev"));
     }
 
     if (containers.length === 0) {
@@ -137,6 +137,18 @@ export async function down({ projectDir, allContainers = false }) {
             });
         })
     );
+
+    // remove each container
+    await Promise.all(
+        containers.map(c => {
+            const container = docker.getContainer(c.Id);
+            return container.remove({ force: true }).catch(err => {
+                console.error(`Failed to remove ${c.Names[0]}: ${err.message}`);
+            });
+        })
+    );
+
+    console.log('Containers stopped and removed.');
 }
 
 /**

@@ -10,9 +10,9 @@ export function registerDevCommands(program) {
 	devCmd
 		.command('up')
 		.description('🛠️  Up Development Containers')
-		.option('-b, --build', 'Ruild without cache')
+		.option('-b, --build', 'Build without cache')
         .option('-d, --detach', 'Run containers in background')
-        .option('-t --test', 'Run the tests with ephemeral databases')
+        .option('-t, --test', 'Run the tests with ephemeral databases')
         .option('--test-service <service>', 'Run the tests for the specified service with ephemeral databases')
         .addOption(new Option('--core-dev').hideHelp())
         .action(async (options) => {

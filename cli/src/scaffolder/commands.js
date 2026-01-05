@@ -33,11 +33,16 @@ export const registerScaffolderCommands = (program) => {
                 }
             ]);
 
+            // validate absolute path, if it is not absolute, make it absolute
+            if (!path.isAbsolute(answers.projectDir)) {
+                answers.projectDir = path.join(process.cwd(), answers.projectDir);
+            }
+
             // create the project
             try {
                 scaffolder.createNewProject({
                     projectName: projectName,
-                    projectDir: answers.projectDir,
+                    projectDir: path.join('/', answers.projectDir),
                     rootAdminEmail: answers.rootAdminEmail
                 });
             } catch (error) {
