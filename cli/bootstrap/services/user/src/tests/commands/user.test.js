@@ -27,5 +27,5 @@ test.run('Create user with random password command', async () => {
         }
     ]});
     test.assert(users.length === 1, 'User was not created successfully');
-    test.assert(users[0].email === 'test2@gnar.co.uk', 'User email does not match');
+    test.assert(users[0].email === 'test3@gnar.co.uk', 'User email does not match');
 });
