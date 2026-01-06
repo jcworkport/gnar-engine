@@ -18,7 +18,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { v5 as uuidv5 } from 'uuid';
 
 const configModule = await import(process.env.GLOBAL_SERVICE_BASE_DIR + 'config.js');
-const config = configModule.config;
+export const config = configModule.config;
 
 /**
  * Gnar Engine
@@ -33,6 +33,9 @@ const GnarEngine = {
 	 * Initialise
 	 */
 	init: async (config) => {
+
+        // Set config
+        GnarEngine.config = config;
 
 		// Initialise http server
 		GnarEngine.http = httpController;

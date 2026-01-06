@@ -1,3 +1,4 @@
+import { config } from '../app.js';
 import { MongoClient } from 'mongodb';
 import mysql from 'mysql2/promise';
 import { loggerService } from './../services/logger.service.js';
@@ -8,13 +9,17 @@ import { loggerService } from './../services/logger.service.js';
  * @returns {Promise<MongoClient>} The MongoDB client.
  */
 export let db = null;
+export let dbType = '';
 
 const retryInterval = 5000;
+
 
 export const initDbConnection = async (config) => {
     if (db) {
         return db;
     }
+
+    dbType = config.type;
 
     try {
         switch (config.type) {
@@ -176,6 +181,55 @@ export const checkConnection = async () => {
         //await db.command({ ping: 1 });
         return true;
     } catch (error) {
+        throw error;
+    }
+}
+
+/**
+ * Reset mongoDb database (for tests)
+ */
+export const resetMongoDb = async () => {
+    if (!db) {
+        throw new Error('Database connection not initialized');
+    }
+
+    if (config.environment !== 'test') {
+        throw new Error('Cannot reset mongo database outside of test mode!');
+    }
+
+    try {
+        const collections = await db.collections();
+        for (const collection of collections) {
+            await collection.deleteMany({});
+        }
+        console.log('MongoDB database reset successfully');
+    } catch (error) {
+        console.error('Error resetting MongoDB database: ' + error.message);
+        throw error;
+    }
+}
+
+/**
+ * Reset mysql databse (for tests)
+ */
+export const resetMysqlDb = async () => {
+    if (!db) {
+        throw new Error('Database connection not initialized');
+    }
+
+    if (config.environment !== 'test') {
+        throw new Error('Cannot reset mysql database outside of test mode!');
+    }
+
+    try {
+        const [tables] = await db.query("SHOW TABLES");
+        for (const row of tables) {
+            const tableName = Object.values(row)[0];
+            await db.query(`DROP TABLE \`${tableName}\``);
+        }
+        console.log('MySQL database reset successfully');
+    } catch (error) {
+        console.error('Error resetting MySQL database: ' + error.message);
         throw error;
     }
 }

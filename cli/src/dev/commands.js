@@ -12,8 +12,8 @@ export function registerDevCommands(program) {
 		.description('🛠️  Up Development Containers')
 		.option('-b, --build', 'Build without cache')
         .option('-d, --detach', 'Run containers in background')
-        .option('-t, --test', 'Run the tests with ephemeral databases')
-        .option('--test-service <service>', 'Run the tests for the specified service with ephemeral databases')
+        .option('-t --test', 'Run the tests with ephemeral databases')
+        .option('--test-service <service>', 'Run the tests for the specified service with ephemeral databases (e.g. --test-service user)')
         .addOption(new Option('--core-dev').hideHelp())
         .action(async (options) => {
 			let response = {};

@@ -121,31 +121,48 @@ commands.register('userService.getManyUsers', async ({}) => {
  * Creat users with random password
  * 
  * @param {Object} params
- * @param {Object} params.user - New user data
+ * @param {Array} params.users - New user data
  */
-commands.register('userService.createUserWithRandomPassword', async ({user}) => {
+commands.register('userService.createUserWithRandomPassword', async ({users}) => {
 
-    // create random password
-    const password = Math.random().toString(36);
-    const userData = {
-        ...user,
-        password: password
-    };
+    const validationErrors = [];
+    let createdNewUsers = [];
 
-    logger.info('creating new user : ' + JSON.stringify(userData));
+    // validate user data
+    for (const newUserData of users) {
 
-    // create user
-    try {
-        const newUsers = await createUsers({users: [userData]})
+        // create random password
+        const password = Math.random().toString(36);
+        newUserData.password = password;
 
-        if (!newUsers || newUsers.length === 0) {
-            throw new error.badRequest('User creation failed');
+        const { errors } = validateUser(newUserData);
+
+        if (errors?.length) {
+            validationErrors.push(errors);
+            continue;
         }
-    
-        return newUsers[0];
-    } catch (error) {
-        throw new error.badRequest('User creation failed: ' + error);
+
+        if (!newUserData.role || newUserData.role !== 'service_admin') {
+            // ensure emails are unique
+            const existingUser = await user.getByEmail({email: newUserData.email});
+
+            if (existingUser) {
+                validationErrors.push(`User with email ${newUserData.email} already exists`);
+            }
+        }
     }
+
+    if (validationErrors.length) {
+        throw new error.badRequest(`Invalid user data: ${validationErrors}`);
+    }
+
+    // add users
+    for (const newUserData of users) {
+        const newUser = await user.create(newUserData);
+        createdNewUsers.push(newUser);
+    }
+
+    return createdNewUsers;
 });
 
 /**
