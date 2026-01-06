@@ -83,7 +83,7 @@ export async function up({ projectDir, build = false, detach = false, coreDev = 
     }
 
     const processRef = spawn(
-        "docker-compose",
+        "docker compose",
         args,
         {
             cwd: projectDir,

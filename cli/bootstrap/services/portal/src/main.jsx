@@ -12,6 +12,8 @@ import PagesPage from './pages/PagesPage/PagesPage.jsx'
 import PageSinglePage from './pages/PageSinglePage/PageSinglePage.jsx'
 import BlocksPage from './pages/BlocksPage/BlocksPage.jsx'
 import BlockSinglePage from './pages/BlockSinglePage/BlockSinglePage.jsx'
+import AuthGuard from './routeGuards/AuthGuard.jsx';
+import GuestGuard from './routeGuards/GuestGuard.jsx';
 
 const router = createBrowserRouter([
     {
@@ -20,29 +22,40 @@ const router = createBrowserRouter([
         children: [
             {
                 path: "login",
-                element: <LoginPage />,
-            },
-            {
-                path: "",
-                element: <PortalLayout />,
+                element: <GuestGuard />,
                 children: [
-                    { index: true, element: <DashboardPage /> },
-                    { path: "dashboard", element: <DashboardPage /> },
+                    {
+                        element: <LoginPage />
+                    }
+                ]
+            },
 
-                    // Users
-                    { path: "users", element: <UsersPage /> },
-                    { path: "users/:id", element: <UserSinglePage /> },
+            {
+                element: <AuthGuard />,
+                children: [
+                    {
+                        element: <PortalLayout />,
+                        children: [
+                            { index: true, element: <DashboardPage /> },
+                            { path: "dashboard", element: <DashboardPage /> },
 
-                    // CMS / Pages
-                    { path: "pages", element: <PagesPage /> },
-                    { path: "pages/:id", element: <PageSinglePage /> },
-                    { path: "blocks", element: <BlocksPage /> },
-                    { path: "blocks/:id", element: <BlockSinglePage /> }
+                            // Users
+                            { path: "users", element: <UsersPage /> },
+                            { path: "users/:id", element: <UserSinglePage /> },
+
+                            // CMS / Pages
+                            { path: "pages", element: <PagesPage /> },
+                            { path: "pages/:id", element: <PageSinglePage /> },
+                            { path: "blocks", element: <BlocksPage /> },
+                            { path: "blocks/:id", element: <BlockSinglePage /> },
+                        ],
+                    },
                 ],
-            }
-        ]
-    }
-]);
+            },
+        ],
+    },
+])
+
 
 createRoot(document.getElementById('root')).render(
     <StrictMode>
