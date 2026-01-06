@@ -1,5 +1,5 @@
 # Dockerfile for Notification Service
-FROM node:20-alpine
+FROM node:20-alpine 
 
 # Set the working directory
 WORKDIR /usr/gnar_engine/app
@@ -17,7 +17,7 @@ RUN npm install -g nodemon
 RUN npm install
 
 # Expose the port the service will run on
-EXPOSE 4000
+EXPOSE 3000
 
 # Start the application
 CMD ["nodemon", "--watch", "./gnar_engine", "./gnar_engine/app.js"]

@@ -90,6 +90,29 @@ export const profiles = {
         this.saveProfiles(allProfiles);
     },
 
+    deleteProfile: function ({ profileName }) {
+        if (!profileName) {
+            throw new Error('Invalid profile name');
+        }
+
+        const allProfiles = this.getAllProfiles().profiles || {};
+
+        if (!allProfiles[profileName]) {
+            throw new Error(`Profile "${profileName}" not found`);
+        }
+
+        const activeProfileName = this.getActiveProfile()?.name;
+
+        if (activeProfileName === profileName) {
+            throw new Error(`Cannot delete active profile "${profileName}". Please set another profile as active first.`);
+        }
+
+        // Prompt user to confirm deletion in the console
+        delete allProfiles[profileName];
+
+        this.saveProfiles(allProfiles);
+    },
+
     saveProfiles: function (profilesObj) {
         const dir = path.dirname(this.configPath);
         if (!fs.existsSync(dir)) {

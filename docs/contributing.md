@@ -10,7 +10,7 @@
 
 ```bash
     cd gnar-engine/cli
-    sh install-from-clone.sh    
+    sudo sh install-from-clone.sh    
 ```
 
 3. Verify the CLI is installed on your machine globally

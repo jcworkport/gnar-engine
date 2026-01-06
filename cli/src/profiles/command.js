@@ -166,5 +166,46 @@ export function registerProfileCommand(program) {
             });
         });
 
+    // delete profile
+    profile
+        .command('delete <profileName>')
+        .description('Delete an existing profile')
+        .action(async (profileName) => {
+            const config = profiles.getAllProfiles();
+            const activeProfileName = config.activeProfile;
+
+            if (activeProfileName === profileName) {
+                console.error(`Cannot delete active profile "${profileName}". Please set another profile as active first.`);
+                return;
+            }
+
+            if (!config.profiles[profileName]) {
+                console.error(`Profile "${profileName}" not found.`);
+                return;
+            }
+
+            try {
+                // confirm deletion with user
+                const confirmation = await inquirer.prompt([
+                    {
+                        type: 'confirm',
+                        name: 'confirmDelete',
+                        message: `Are you sure you want to delete profile "${profileName}"?`,
+                        default: false,
+                    },
+                ]);
+
+                if (!confirmation.confirmDelete) {
+                    console.log('❌ Deletion cancelled.');
+                    return;
+                }
+
+                profiles.deleteProfile({ profileName });
+                console.log(`✅ Profile "${profileName}" deleted successfully.`);
+            } catch (error) {
+                console.error(error.message);
+            }
+        });
+
     program.addCommand(profile);
 }

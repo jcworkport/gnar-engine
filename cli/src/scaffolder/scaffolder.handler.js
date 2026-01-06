@@ -173,8 +173,10 @@ export const scaffolder = {
 
         entries.forEach(entry => {
             const fullPath = path.join(dir, entry.name);
+            // if the full path contains src, the 'data' directory can be included
+            const includeDataDir = fullPath.includes(`${path.sep}src${path.sep}`) && fullPath.includes('data') ? true : false;
             if (entry.isDirectory()) {
-                if (entry.name !== 'node_modules' && entry.name !== 'data') {
+                if (entry.name !== 'node_modules' && (entry.name !== 'data' || includeDataDir)) {
                     if (!entry.name.startsWith('.') || entry.name == '.gnarengine') {
                         scaffolder.getAllTemplateFiles({
                             dir: fullPath,

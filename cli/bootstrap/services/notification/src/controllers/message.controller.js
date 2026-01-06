@@ -1,82 +1,51 @@
-import { commandBus } from '../commands/command-bus.js';
-import { logger } from '../services/logger.service.js';
-import { initializeRabbitMQ } from '@gnar-engine/message-client';
+import { commands } from '@gnar-engine/core';
 
-// Configuration
-const queueName = 'notificationServiceQueue';
-const prefetch = 3;
+export const messageHandlers = {
 
-export const messageController = {
-    handleMessage: async function (msg, channel) {
-        if (!msg) return;
-
-        const payload = JSON.parse(msg.content.toString());
-
-        if (!payload.method) {
-            return channel.sendToQueue(msg.properties.replyTo, Buffer.from(JSON.stringify({ error: 'Method not found' })), {
-                correlationId: msg.properties.correlationId,
+    getNotification: async (payload) => {
+        let result;
+        if (payload.data?.id) {
+            result = await commands.execute('getSingleNotification', {
+                id: payload.data.id
             });
-        }
-
-        switch (payload.method) {
-            case 'sendNotification':
-                try {
-                    const { templateName, to, params, subject } = payload.data;
-                    await commandBus.execute('sendNotification', { templateName, to, params, subject });
-                    channel.sendToQueue(msg.properties.replyTo, Buffer.from(JSON.stringify({ status: 'ok' })), {
-                        correlationId: msg.properties.correlationId,
-                    });
-                } catch (error) {
-                    logger.error("Error sending notification: " + error);
-                    channel.sendToQueue(msg.properties.replyTo, Buffer.from(JSON.stringify({ error: 'Failed to send notification' })), {
-                        correlationId: msg.properties.correlationId,
-                    });
-                } finally {
-                    channel.ack(msg);
-                }
-                break;
-
-            case 'healthCheck':
-                await this.handleHealthCheck(msg, channel);
-                break;
-
-            default:
-                await this.handleMethodNotFound(msg, channel);
-        }
-    },
-
-    // Handler for the health check method
-    async handleHealthCheck(msg, channel) {
-        try {
-            channel.sendToQueue(msg.properties.replyTo, Buffer.from(JSON.stringify({ status: 'ok' })), {
-                correlationId: msg.properties.correlationId,
+        } else if (payload.data?.email) {
+            result = await commands.execute('getSingleNotification', {
+                email: payload.data.email
             });
-        } catch (error) {
-            logger.error("Error running health check:", error);
-        } finally {
-            channel.ack(msg);
+        } else {
+            throw new Error('No notification ID or email provided');
         }
+        if (!result) {
+            throw new Error('Notification not found');
+        }
+        return { notification: result };
     },
 
-    // Handler for unknown methods
-    async handleMethodNotFound(msg, channel) {
-        try {
-            channel.sendToQueue(msg.properties.replyTo, Buffer.from(JSON.stringify({ error: 'Method not found' })), {
-                correlationId: msg.properties.correlationId,
-            });
-        } catch (error) {
-            logger.error("Error handling method not found:", error);
-        } finally {
-            channel.ack(msg);
-        }
+    getManyNotifications: async (payload) => {
+        const results = await commands.execute('getManyNotifications', {});
+        return { notifications: results };
     },
 
-    // Initialize RabbitMQ and consumers
-    init: async function () {
-        await initializeRabbitMQ(
-            queueName,
-            prefetch,
-            this.handleMessage.bind(this)
-        );
+    createNotification: async (payload) => {
+        const results = await commands.execute('createNotifications', {
+            notifications: [payload.data.notification]
+        });
+        return { notifications: results };
     },
-}
+
+    updateNotification: async (payload) => {
+        const result = await commands.execute('updateNotification', {
+            id: payload.data.id,
+            newNotificationData: payload.data
+        });
+        return { notification: result };
+    },
+
+    deleteNotification: async (payload) => {
+        await commands.execute('deleteNotification', {
+            id: payload.data.id
+        });
+        return { message: 'Notification deleted' };
+    },
+
+};
