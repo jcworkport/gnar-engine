@@ -1,51 +1,53 @@
-import dotenv from 'dotenv';
-import { logger } from './services/logger.service.js';
-import { commandBus } from './commands/command-bus.js';
-import { messageController } from './controllers/message.controller.js';
-import { messageAwaitResponse } from '@gnar-engine/message-client';
-import { internalHealthCheck } from './commands/handlers/control.handler.js';
-import { sendNotification } from './commands/handlers/notification.handler.js';
-
-dotenv.config({ path: '.env' });
-
-process.on('unhandledRejection', (reason, promise) => {
-	console.error('🚨 Unhandled Rejection at:', promise, '\nReason:', reason);
-	process.exit(1);
-});
-  
-process.on('uncaughtException', (err) => {
-	console.error('🚨 Uncaught Exception:', err);
-	process.exit(1);
-});
+import { message, http, logger, db, registerService, webSockets, test } from '@gnar-engine/core';
+import { config } from './config.js';
+import { messageHandlers } from './controllers/message.controller.js';
+import { httpController as notificationPlatformHttpController } from './controllers/http.controller.js';
 
 /**
- * @function startServer
- * @description Initializes and starts the Fastify server.
+ * Initialise service
  */
-const startService = async () => {
+export const initService = async () => {
 
-	// Register commands
-	commandBus.register('internalHealthCheck', internalHealthCheck);
-	commandBus.register('sendNotification', sendNotification);
+	// Run migrations
+    if (config.db.type == 'mysql') {
+	    db.migrations.runMigrations({config});
+    }
 
-	// Init controllers and error handlers
-	messageController.init();
+    // Run seeders
+	db.seeders.runSeeders({config});
 
-	// Register with control service
-	try {
-		await messageAwaitResponse('controlService', {
-			method: 'registerService',
-			data: {
-				service: {
-					name: 'notificationService'
-				}
-			}
-		});
-	} catch (error) {
-		logger.info('No response from the control service when registering as a service');
-	}
+	// Import command handlers after the command bus is initialised
+	await import('./commands/notification.handler.js');
+	// Add more handlers as needed
 
-};
+	// Initialise and register message handlers
+	await message.init({
+		config: config.message,
+		handlers: messageHandlers
+	});
 
-// Entry point
-startService();
+    // Initialise websocket client & server
+    await webSockets.init(config.webSockets, config.serviceName);
+
+	// Register http routes
+	await http.registerRoutes({
+		controllers: [
+			notificationPlatformHttpController,
+		]
+	});
+
+	// Start the HTTP server
+	await http.start();
+
+    // Register service with control service
+    await registerService();
+
+	logger.info('G n a r  E n g i n e | Notification Service initialised successfully.');
+
+    // Tests
+    if (config.environment === 'test' && config.runTests) {
+        test.runCommandTests({config});
+    }
+}
+
+initService();

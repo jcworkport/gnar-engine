@@ -63,3 +63,17 @@ config:
         - '4004:3000'
       depends_on:
         - db-mongo
+    - name: notification
+      listener_rules:
+        paths:
+          - /notification
+      min_tasks: 1
+      max_tasks: 1
+      command:
+        - npm
+        - run
+        - start:dev
+      ports:
+        - '4005:3000'
+      depends_on:
+        - db-mysql
