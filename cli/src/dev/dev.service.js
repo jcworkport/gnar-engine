@@ -6,6 +6,7 @@ import path from "path";
 import yaml from "js-yaml";
 import { gnarEngineCliConfig } from "../config.js";
 import { directories } from "../cli.js";
+import { buildImage, upContainer } from "../services/docker.js";
 
 const docker = new Docker();
 
@@ -56,7 +57,7 @@ export async function up({ projectDir, build = false, detach = false, coreDev = 
 
     // create docker-compose.yml dynamically from parsed config and secrets
     const dockerComposePath = path.join(gnarHiddenDir, "docker-compose.dev.yml");
-    const dockerCompose = await createDynamicDockerCompose({
+    const dockerCompose = await buildAndUpContainers({
         config: parsedConfig.config,
         secrets: parsedSecrets,
         gnarHiddenDir: gnarHiddenDir,
@@ -65,41 +66,40 @@ export async function up({ projectDir, build = false, detach = false, coreDev = 
         test: test,
         testService: testService
     });
-    await fs.writeFile(dockerComposePath, yaml.dump(dockerCompose));
 
-    // up docker-compose
-    const args = ["-f", dockerComposePath, "up"];
+    // // up docker-compose
+    // const args = ["-f", dockerComposePath, "up"];
+    //
+    // if (build) {
+    //     args.push("--build");
+    // }
+    //
+    // if (detach) {
+    //     args.push("-d");
+    // }
+    //
+    // if (removeOrphans) {
+    //     args.push("--remove-orphans")
+    // }
 
-    if (build) {
-        args.push("--build");
-    }
-
-    if (detach) {
-        args.push("-d");
-    }
-
-    if (removeOrphans) {
-        args.push("--remove-orphans")
-    }
-
-    const processRef = spawn(
-        "docker-compose",
-        args,
-        {
-            cwd: projectDir,
-            stdio: "inherit",
-            shell: "/bin/sh"
-        }
-    );
-
-    // handle exit
-    const exitCode = await new Promise((resolve) => {
-        processRef.on("close", resolve);
-    });
-
-    if (exitCode !== 0) {
-        throw new Error(`docker-compose up exited with code ${exitCode}`);
-    }
+    // const processRef = spawn(
+    //     "docker-compose",
+    //     args,
+    //     {
+    //         cwd: projectDir,
+    //         stdio: "inherit",
+    //         shell: "/bin/sh"
+    //     }
+    // );
+    //
+    // // handle exit
+    // const exitCode = await new Promise((resolve) => {
+    //     processRef.on("close", resolve);
+    // });
+    //
+    // if (exitCode !== 0) {
+    //     throw new Error(`docker-compose up exited with code ${exitCode}`);
+    // }
 }
 
 /**
@@ -226,17 +226,21 @@ export async function createDynamicNginxConf({ config, serviceConfDir, projectDi
  * @param {string} gnarHiddenDir
  * @param {string} projectDir
  * @param {boolean} coreDev - Whether to volume mount the core source code
+ * @param {boolean} build - Whether to re-build images
  * @param {boolean} test - Whether to run tests with ephemeral databases
  * @param {string} testService - The service to run tests for (only applicable if test=true)
  * @param {boolean} attachAll - Whether to attach to all containers' stdio (otherwise databases and message queue are detached)
  */
-async function createDynamicDockerCompose({ config, secrets, gnarHiddenDir, projectDir, coreDev = false, test = false, testService, attachAll = false }) {
+async function buildAndUpContainers({ config, secrets, gnarHiddenDir, projectDir, coreDev = false, build = false, test = false, testService, attachAll = false }) {
     let mysqlPortsCounter = 3306;
     let mongoPortsCounter = 27017;
     let mysqlHostsRequired = [];
     let mongoHostsRequired = [];
     const services = {};
 
+    console.log('========   g n a r   e n g i n e   ========');
+    console.log('⛏️  Starting development environment...');
+    
     // test mode env var adjustments
     for (const svc of config.services) {
         if (test) {
@@ -256,61 +260,76 @@ async function createDynamicDockerCompose({ config, secrets, gnarHiddenDir, proj
     }
 
     // provision the provisioner service
-    services['provisioner'] = {
-        container_name: `ge-${config.environment}-${config.namespace}-provisioner`,
-        image: `ge-${config.environment}-${config.namespace}-provisioner`,
-        build: {
+    const provisionerTag = `ge-${config.environment}-${config.namespace}-provisioner`;
+    
+    if (build) {
+        await buildImage({
             context: directories.provisioner,
-            dockerfile: `./Dockerfile`
-        },
-        environment: {
+            dockerfile: 'Dockerfile',
+            imageTag: provisionerTag
+        });
+    }
+
+    const provisionerVolumes = [
+        `${path.resolve(projectDir, 'provisioner', 'src')}:/usr/gnar_engine/app/src`
+    ];
+
+    if (coreDev) {
+        provisionerVolumes.push(`../../../core/:${gnarEngineCliConfig.corePath}`);
+    }
+
+    const provisioner = await upContainer({
+        name: provisionerTag,
+        image: provisionerTag,
+        env: {
             PROVISIONER_SECRETS: JSON.stringify(secrets)
         },
-        volumes: [
-            `${directories.provisioner}/src:/usr/gnar_engine/app/src`
+        ports: {},
+        binds: [
+            `${path.resolve(projectDir, 'provisioner', 'src')}:/usr/gnar_engine/app/src`
         ],
         restart: 'no',
         attach: attachAll
-    }
+    });
 
-    if (coreDev) {
-        services['provisioner'].volumes.push(`../../../core/:${gnarEngineCliConfig.corePath}`);
-    }
-
-    // nginx
-    services['nginx'] = {
+    // Nginx
+    await upContainer({
+        name: `ge-${config.environment}-${config.namespace}-nginx`,
         image: 'nginx:latest',
-        container_name: `ge-${config.environment}-${config.namespace}-nginx`,
-        ports: [
-            "80:80",
-            "443:443"
-        ],
-        volumes: [
+        ports: { 80: 80, 443: 443 },
+        binds: [
             `${gnarHiddenDir}/nginx/nginx.conf:/etc/nginx/nginx.conf`,
             `${gnarHiddenDir}/nginx/service_conf:/etc/nginx/service_conf`
         ],
-        restart: 'always',
         attach: attachAll
-    }
+    });
 
-    // rabbit
-    services['rabbitmq'] = {
+    // Rabbit MQ 
+    await upContainer({
+        name: `ge-${config.environment}-${config.namespace}-rabbitmq`,
         image: 'rabbitmq:management',
-        container_name: `ge-${config.environment}-${config.namespace}-rabbitmq`,
-        ports: [
-            "5672:5672",
-            "15672:15672"
-        ],
-        environment: {
+        env: {
             RABBITMQ_DEFAULT_USER: secrets.global.RABBITMQ_USER || '',
             RABBITMQ_DEFAULT_PASS: secrets.global.RABBITMQ_PASS || ''
         },
-        restart: 'always',
+        ports: { 5672: 5672, 15672: 15672 },
+        binds: [],
         attach: attachAll
-    }
+    });
 
     // services
     for (const svc of config.services) {
+
+        // build service image
+        const svcTag = `ge-${config.environment}-${config.namespace}-${svc.name}`;
+
+        if (build) {
+            await buildImage({
+                context: path.resolve(projectDir, 'services', svc.name),
+                dockerfile: 'Dockerfile',
+                imageTag: svcTag
+            });
+        }
 
         // env variables
         const serviceEnvVars = secrets.services?.[svc.name] || {};
@@ -333,28 +352,32 @@ async function createDynamicDockerCompose({ config, secrets, gnarHiddenDir, proj
             }
         }
 
-        // service block
-        services[`${svc.name}-service`] = {
-            container_name: `ge-${config.environment}-${config.namespace}-${svc.name}`,
-            image: `ge-${config.environment}-${config.namespace}-${svc.name}`,
-            build: {
-                context: projectDir,
-                dockerfile: `./services/${svc.name}/Dockerfile`
-            },
-            command: svc.command || [],
-            environment: env,
-            ports: svc.ports || [],
-            depends_on: svc.depends_on || [],
-            volumes: [
-                `${projectDir}/services/${svc.name}/src:/usr/gnar_engine/app/src`
-            ],
-            restart: 'always'
-        };
-
         // add the core source code mount if in coreDev mode
+        const serviceVolumes = [
+            `${path.resolve(projectDir, 'services', svc.name, 'src')}:/usr/gnar_engine/app/src`
+        ];
+
         if (coreDev) {
-            services[`${svc.name}-service`].volumes.push(`../../../core/:${gnarEngineCliConfig.corePath}`);
+            serviceVolumes.push(`../../../core/:${gnarEngineCliConfig.corePath}`);
         }
+
+        // split from "port:port" to { port: port }
+        const ports = {};
+        for (const portMapping of svc.ports || []) {
+            const [hostPort, containerPort] = portMapping.split(':').map(p => parseInt(p, 10));
+            ports[containerPort] = hostPort;
+        }
+
+        await upContainer({
+            name: svcTag,
+            image: svcTag,
+            command: svc.command || [],
+            env: env,
+            ports: ports,
+            binds: serviceVolumes,
+            restart: 'always',
+            attach: true 
+        });
 
         // check if mysql service required
         if (
@@ -380,29 +403,27 @@ async function createDynamicDockerCompose({ config, secrets, gnarHiddenDir, proj
                 continue;
             }
 
-            services[host] = {
-                container_name: `ge-${config.environment}-${config.namespace}-${host}`,
+            await upContainer({
+                name: `ge-${config.environment}-${config.namespace}-${host}`,
                 image: 'mysql',
-                ports: [
-                    `${mysqlPortsCounter}:${mysqlPortsCounter}`
-                ],
-                restart: 'always',
-                environment: {
+                env: {
                     MYSQL_HOST: host,
                     MYSQL_ROOT_PASSWORD: secrets.provision.MYSQL_ROOT_PASSWORD
                 },
-                volumes: [
+                ports: {
+                    [mysqlPortsCounter]: mysqlPortsCounter
+                },
+                binds: [
                     `${gnarHiddenDir}/data/${host}-data:/var/lib/mysql`
                 ],
+                restart: 'always',
                 attach: attachAll
-            };
+            });
 
             mysqlPortsCounter++;
         }
-
-        services['provisioner'].depends_on = [...new Set(mysqlHostsRequired)];
     }
-    
+
     // add mongo hosts if required
     if (mongoHostsRequired.length > 0) {
         for (const host of mongoHostsRequired) {
@@ -410,32 +431,27 @@ async function createDynamicDockerCompose({ config, secrets, gnarHiddenDir, proj
                 continue;
             }
 
-            services[host] = {
-                container_name: `ge-${config.environment}-${config.namespace}-${host}`,
+            await upContainer({
+                name: `ge-${config.environment}-${config.namespace}-${host}`,
                 image: 'mongo:latest',
-                ports: [
-                    `${mongoPortsCounter}:27017`
-                ],
-                restart: 'always',
-                environment: {
+                env: {
                     MONGO_INITDB_ROOT_USERNAME: 'root',
                     MONGO_INITDB_ROOT_PASSWORD: secrets.provision.MONGO_ROOT_PASSWORD
                 },
-                volumes: [
+                ports: {
+                    [mongoPortsCounter]: 27017
+                },
+                binds: [
                     `${gnarHiddenDir}/data/${host}-data:/data/db`,
                     './mongo-init-scripts:/docker-entrypoint-initdb.d'
                 ],
+                restart: 'always',
                 attach: attachAll
-            };
+            });
 
             // increment mongo port for next service as required
             mongoPortsCounter++;
         }
-    }
-
-    return {
-        version: "3.9",
-        services
     }
 }
 
