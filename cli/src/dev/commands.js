@@ -12,9 +12,11 @@ export function registerDevCommands(program) {
 		.description('🛠️  Up Development Containers')
 		.option('-b, --build', 'Build without cache')
         .option('-d, --detach', 'Run containers in background')
+        .option('-a, --attach-all', 'Attach all services including database and message queues for debugging')
         .option('-t --test', 'Run the tests with ephemeral databases')
         .option('--test-service <service>', 'Run the tests for the specified service with ephemeral databases (e.g. --test-service user)')
         .addOption(new Option('--core-dev').hideHelp())
+        .addOption(new Option('--bootstrap-dev').hideHelp())
         .action(async (options) => {
 			let response = {};
 
@@ -39,8 +41,10 @@ export function registerDevCommands(program) {
                     build: options.build || false,
                     detach: options.detach || false,
                     coreDev: options.coreDev || false,
+                    bootstrapDev: options.bootstrapDev || false,
                     test: options.test || false,
-                    testService: options.testService || ''
+                    testService: options.testService || '',
+                    attachAll: options.attachAll || false
                  });
 			} catch (err) {
 				console.error("❌ Error running containers:", err.message);

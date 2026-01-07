@@ -3,10 +3,11 @@ import Docker from "dockerode";
 import process from "process";
 import fs from "fs/promises";
 import path from "path";
+import { fileURLToPath } from 'url';
 import yaml from "js-yaml";
 import { gnarEngineCliConfig } from "../config.js";
 import { directories } from "../cli.js";
-import { buildImage, upContainer } from "../services/docker.js";
+import { buildImage, upContainer, createBridgeNetwork } from "../services/docker.js";
 
 const docker = new Docker();
 
@@ -20,14 +21,16 @@ const docker = new Docker();
  * @param {boolean} [options.build=false] - Whether to re-build images
  * @param {boolean} [options.detach=false] - Whether to run containers in background
  * @param {boolean} [options.coreDev=false] - Whether to run in core development mode (requires access to core source)
+ * @param {boolean} [options.bootstrapDev=false] - Whether to set the cli/src/bootstrap directory as the project directory
  * @param {boolean} [options.test=false] - Whether to run tests with ephemeral databases
  * @param {string} [options.testService=''] - The service to run tests for (only applicable if test=true)
  * @param {boolean} [options.removeOrphans=true] - Whether to remove orphaned containers
+ * @param {boolean} [options.attachAll=false] - Attach all services including database and message queues for debugging
  */
-export async function up({ projectDir, build = false, detach = false, coreDev = false, test = false, testService = '', removeOrphans = true }) {
+export async function up({ projectDir, build = false, detach = false, coreDev = false, bootstrapDev = false, test = false, testService = '', removeOrphans = true, attachAll = false}) {
     
-    // core dev
-    if (coreDev) {
+    // bootstrap dev
+    if (bootstrapDev) {
         const fileDir = path.dirname(new URL(import.meta.url).pathname);
         projectDir = path.resolve(fileDir, "../../bootstrap/");
     }
@@ -63,8 +66,10 @@ export async function up({ projectDir, build = false, detach = false, coreDev = 
         gnarHiddenDir: gnarHiddenDir,
         projectDir: projectDir,
         coreDev: coreDev,
+        bootstrapDev: bootstrapDev,
         test: test,
-        testService: testService
+        testService: testService,
+        attachAll: attachAll
     });
 
     // // up docker-compose
@@ -226,12 +231,14 @@ export async function createDynamicNginxConf({ config, serviceConfDir, projectDi
  * @param {string} gnarHiddenDir
  * @param {string} projectDir
  * @param {boolean} coreDev - Whether to volume mount the core source code
+ * @param {boolean} bootstrapDev - Whether to set the cli/src/bootstrap directory as the project directory
  * @param {boolean} build - Whether to re-build images
  * @param {boolean} test - Whether to run tests with ephemeral databases
  * @param {string} testService - The service to run tests for (only applicable if test=true)
  * @param {boolean} attachAll - Whether to attach to all containers' stdio (otherwise databases and message queue are detached)
  */
-async function buildAndUpContainers({ config, secrets, gnarHiddenDir, projectDir, coreDev = false, build = false, test = false, testService, attachAll = false }) {
+async function buildAndUpContainers({ config, secrets, gnarHiddenDir, projectDir, coreDev = false, bootstrapDev = false, build = false, test = false, testService, attachAll = false }) {
+    
     let mysqlPortsCounter = 3306;
     let mongoPortsCounter = 27017;
     let mysqlHostsRequired = [];
@@ -259,6 +266,12 @@ async function buildAndUpContainers({ config, secrets, gnarHiddenDir, projectDir
         }
     }
 
+    // create bridge network
+    const networkName = `ge-${config.environment}-${config.namespace}`;
+    createBridgeNetwork({
+        name: networkName
+    })
+
     // provision the provisioner service
     const provisionerTag = `ge-${config.environment}-${config.namespace}-provisioner`;
     
@@ -270,12 +283,15 @@ async function buildAndUpContainers({ config, secrets, gnarHiddenDir, projectDir
         });
     }
 
-    const provisionerVolumes = [
-        `${path.resolve(projectDir, 'provisioner', 'src')}:/usr/gnar_engine/app/src`
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+
+    const provisionerBinds = [
+        `${path.resolve(__dirname, '../provisioner', 'src')}:/usr/gnar_engine/app/src`
     ];
 
     if (coreDev) {
-        provisionerVolumes.push(`../../../core/:${gnarEngineCliConfig.corePath}`);
+        provisionerBinds.push(`../../../core/:${gnarEngineCliConfig.corePath}`);
     }
 
     const provisioner = await upContainer({
@@ -285,11 +301,10 @@ async function buildAndUpContainers({ config, secrets, gnarHiddenDir, projectDir
             PROVISIONER_SECRETS: JSON.stringify(secrets)
         },
         ports: {},
-        binds: [
-            `${path.resolve(projectDir, 'provisioner', 'src')}:/usr/gnar_engine/app/src`
-        ],
+        binds: provisionerBinds,
         restart: 'no',
-        attach: attachAll
+        attach: attachAll,
+        network: networkName
     });
 
     // Nginx
@@ -301,7 +316,8 @@ async function buildAndUpContainers({ config, secrets, gnarHiddenDir, projectDir
             `${gnarHiddenDir}/nginx/nginx.conf:/etc/nginx/nginx.conf`,
             `${gnarHiddenDir}/nginx/service_conf:/etc/nginx/service_conf`
         ],
-        attach: attachAll
+        attach: attachAll,
+        network: networkName
     });
 
     // Rabbit MQ 
@@ -314,7 +330,8 @@ async function buildAndUpContainers({ config, secrets, gnarHiddenDir, projectDir
         },
         ports: { 5672: 5672, 15672: 15672 },
         binds: [],
-        attach: attachAll
+        attach: attachAll,
+        network: networkName
     });
 
     // services
@@ -376,7 +393,8 @@ async function buildAndUpContainers({ config, secrets, gnarHiddenDir, projectDir
             ports: ports,
             binds: serviceVolumes,
             restart: 'always',
-            attach: true 
+            attach: true,
+            network: networkName
         });
 
         // check if mysql service required
@@ -417,7 +435,8 @@ async function buildAndUpContainers({ config, secrets, gnarHiddenDir, projectDir
                     `${gnarHiddenDir}/data/${host}-data:/var/lib/mysql`
                 ],
                 restart: 'always',
-                attach: attachAll
+                attach: attachAll,
+                network: networkName
             });
 
             mysqlPortsCounter++;
@@ -443,10 +462,11 @@ async function buildAndUpContainers({ config, secrets, gnarHiddenDir, projectDir
                 },
                 binds: [
                     `${gnarHiddenDir}/data/${host}-data:/data/db`,
-                    './mongo-init-scripts:/docker-entrypoint-initdb.d'
+                    //'./mongo-init-scripts:/docker-entrypoint-initdb.d'
                 ],
                 restart: 'always',
-                attach: attachAll
+                attach: attachAll,
+                network: networkName
             });
 
             // increment mongo port for next service as required

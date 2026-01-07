@@ -47,9 +47,10 @@ export async function buildImage({ context, dockerfile, imageTag }) {
  * @param {Array} [options.binds] - Volume bindings
  * @param {string} [options.restart] - Restart policy
  * @param {boolean} [options.attach] - Whether to attach to container output
+ * @param {string} [options.network] - Network name
  * @returns {Promise<Docker.Container>} - The started container
  */
-export async function upContainer({ name, image, command = [], env = {}, ports = {}, binds = [], restart = 'always', attach = true }) {
+export async function upContainer({ name, image, command = [], env = {}, ports = {}, binds = [], restart = 'always', attach = true, network }) {
 
     // remove container first
     try {
@@ -66,16 +67,17 @@ export async function upContainer({ name, image, command = [], env = {}, ports =
         Cmd: command,
         Env: Object.entries(env).map(([k, v]) => `${k}=${v}`),
         HostConfig: {
-        RestartPolicy: { Name: restart },
-        Binds: binds,
-        PortBindings: Object.fromEntries(
-            Object.entries(ports).map(([cPort, hPort]) => [
-                `${cPort}/tcp`,
-                [{ HostPort: String(hPort) }]
-            ])
-        )
+            RestartPolicy: { Name: restart },
+            Binds: binds,
+            PortBindings: Object.fromEntries(
+                Object.entries(ports).map(([cPort, hPort]) => [
+                    `${cPort}/tcp`,
+                    [{ HostPort: String(hPort) }]
+                ])
+            ),
+            NetworkMode: network,
         },
-            ExposedPorts: Object.fromEntries(
+        ExposedPorts: Object.fromEntries(
             Object.keys(ports).map(p => [`${p}/tcp`, {}])
         )
     });
@@ -92,6 +94,23 @@ export async function upContainer({ name, image, command = [], env = {}, ports =
     await container.start();
 
     return container;
+}
+
+/**
+ * Create network
+ *
+ * @param {String} name - Network name
+ */
+export async function createBridgeNetwork({ name }) {
+    try {
+        await docker.createNetwork({
+            Name: name,
+            Driver: 'bridge',
+            CheckDuplicate: true
+        });
+    } catch (err) {
+        console.error(err);
+    }
 }
 
 /**
