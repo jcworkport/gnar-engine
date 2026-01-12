@@ -1,3 +1,4 @@
+import path from 'path';
 
 export const gnarEngineCliConfig = {
 
@@ -7,3 +8,10 @@ export const gnarEngineCliConfig = {
     corePath: '/usr/gnar_engine/app/node_modules/@gnar-engine/core'
 
 }
+
+export const directories = {
+    scaffolderServiceTemplates: path.join(import.meta.dirname, '../templates/service'),
+    scaffolderEntityTemplates: path.join(import.meta.dirname, '../templates/entity'),
+    bootstrap: path.join(import.meta.dirname, '../bootstrap'),
+    provisioner: path.join(import.meta.dirname, './provisioner')
+};

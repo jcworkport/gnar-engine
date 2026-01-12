@@ -5,7 +5,7 @@ import fs from "fs/promises";
 import path from "path";
 import yaml from "js-yaml";
 import { gnarEngineCliConfig } from "../config.js";
-import { directories } from "../cli.js";
+import { directories } from "../config.js";
 
 const docker = new Docker();
 
