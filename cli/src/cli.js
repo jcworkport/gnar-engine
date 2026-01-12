@@ -32,7 +32,8 @@ program.parse(process.argv);
 
 // Consts
 export const directories = {
-    scaffolderTemplates: path.join(import.meta.dirname, '../templates/service'),
+    scaffolderServiceTemplates: path.join(import.meta.dirname, '../templates/service'),
+    scaffolderEntityTemplates: path.join(import.meta.dirname, '../templates/entity'),
     bootstrap: path.join(import.meta.dirname, '../bootstrap'),
     provisioner: path.join(import.meta.dirname, './provisioner')
 }

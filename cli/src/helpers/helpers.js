@@ -1,3 +1,6 @@
+import fs from 'fs/promises';
+import path from 'path';
+import yaml from 'js-yaml';
 
 /**
  * CLI helper functions
@@ -59,5 +62,26 @@ export const helpers = {
             result += chars.charAt(Math.floor(Math.random() * chars.length));
         }
         return result;
+    },
+
+    getDbTypeFromSecrets: async (serviceName, projectDir) => {
+        let dbType;
+        const secretsPath = path.join(projectDir, "secrets.localdev.yml");
+        const parsedSecrets = yaml.load(await fs.readFile(secretsPath, "utf8"));
+        const serviceSecrets = parsedSecrets.services[serviceName.toLowerCase()];
+
+        Object.keys(serviceSecrets).forEach(key => {
+            if (key.toLowerCase().includes('host')) {
+                const host = serviceSecrets[key].toLowerCase();
+
+                if (host.includes('mongo')) {
+                    dbType = 'mongodb';
+                } else if (host.includes('mysql')) {
+                    dbType = 'mysql';
+                }
+            }
+        });
+
+        return dbType;
     }
 }
