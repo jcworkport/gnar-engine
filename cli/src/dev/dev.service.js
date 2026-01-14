@@ -6,8 +6,9 @@ import path from "path";
 import { fileURLToPath } from 'url';
 import yaml from "js-yaml";
 import { gnarEngineCliConfig } from "../config.js";
-import { directories } from "../cli.js";
 import { buildImage, upContainer, createBridgeNetwork } from "../services/docker.js";
+import { directories } from "../config.js";
+
 
 const docker = new Docker();
 

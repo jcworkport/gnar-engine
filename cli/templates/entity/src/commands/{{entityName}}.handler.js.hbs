@@ -1,0 +1,94 @@
+import { commands, logger, error } from '@gnar-engine/core';
+import { {{entityName}} } from '../services/{{entityName}}.service.js';
+import { config } from '../config.js';
+import { validate{{pascalCase entityName}} } from '../schema/{{entityName}}.schema.js';
+
+
+/**
+ * Get single {{entityName}}
+ */
+commands.register('{{serviceName}}Service.getSingle{{pascalCase entityName}}', async ({id}) => {
+    if (id) {
+        return await {{entityName}}.getById({id: id});
+    } else {
+        throw new error.badRequest('{{pascalCase entityName}} id required');
+    }
+});
+
+/**
+ * Get many {{lowerCasePlural entityName}}
+ */
+commands.register('{{serviceName}}Service.getMany{{pascalCasePlural entityName}}', async ({}) => {
+    return await {{entityName}}.getAll();
+});
+
+/**
+ * Create {{lowerCasePlural entityName}}
+ */
+commands.register('{{serviceName}}Service.create{{pascalCasePlural entityName}}', async ({ {{lowerCasePlural entityName}} }) => {
+    const validationErrors = [];
+    let createdNew{{pascalCasePlural entityName}} = [];
+
+    for (const newData of {{lowerCasePlural entityName}}) {
+        const { errors } = validate{{pascalCase entityName}}(newData);
+        if (errors?.length) {
+            validationErrors.push(errors);
+            continue;
+        }
+
+        const created = await {{entityName}}.create(newData);
+        createdNew{{pascalCasePlural entityName}}.push(created);
+    }
+
+    if (validationErrors.length) {
+        throw new error.badRequest(`Invalid {{entityName}} data: ${validationErrors}`);
+    }
+
+    return createdNew{{pascalCasePlural entityName}};
+});
+
+/**
+ * Update {{entityName}}
+ */
+commands.register('{{serviceName}}Service.update{{pascalCase entityName}}', async ({id, new{{pascalCase entityName}}Data}) => {
+
+    const validationErrors = [];
+
+    if (!id) {
+        throw new error.badRequest('{{pascalCase entityName}} ID required');
+    }
+
+    const obj = await {{entityName}}.getById({id: id});
+
+    if (!obj) {
+        throw new error.notFound('{{pascalCase entityName}} not found');
+    }
+
+    delete new{{pascalCase entityName}}Data.id;
+
+    const { errors } = validate{{pascalCase entityName}}Update(new{{pascalCase entityName}}Data);
+ 
+    if (errors?.length) {
+        validationErrors.push(errors);
+    }
+
+    if (validationErrors.length) {
+        throw new error.badRequest(`Invalid {{entityName}} data: ${validationErrors}`);
+    }
+
+    return await {{entityName}}.update({
+        id: id,
+        updatedData: new{{pascalCase entityName}}Data
+    });
+});
+
+/**
+ * Delete {{entityName}}
+ */
+commands.register('{{serviceName}}Service.delete{{pascalCase entityName}}', async ({id}) => {
+    const obj = await {{entityName}}.getById({id: id});
+    if (!obj) {
+        throw new error.notFound('{{pascalCase entityName}} not found');
+    }
+    return await {{entityName}}.delete({id: id});
+});

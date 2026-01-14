@@ -3,7 +3,7 @@ import fs from 'fs';
 import yaml from 'js-yaml';
 import { profiles } from '../profiles/profiles.client.js';
 import { helpers } from '../helpers/helpers.js';
-import { directories } from '../cli.js';
+import { directories } from '../config.js';
 import Handlebars from 'handlebars';
 
 
@@ -36,67 +36,21 @@ export const scaffolder = {
 
         // Get all files in the templates directory
         const templateFiles = scaffolder.getAllTemplateFiles({
-            dir: directories.scaffolderTemplates,
-            baseDir: directories.scaffolderTemplates
+            dir: directories.scaffolderServiceTemplates,
+            baseDir: directories.scaffolderServiceTemplates
         }); 
 
-        // Register Handlebars helpers
-        Object.entries(helpers).forEach(([name, fn]) => {
-            Handlebars.registerHelper(name, fn);
-        });
+        // scaffold the hbs templates
+        const templateArgs = {
+            serviceName,
+            database
+        };
 
-        // Write the files to the service directory
-        templateFiles.forEach(file => {
-            let sourcePath;
-            let targetPath;
-            const templateArgs = {
-                serviceName,
-                database
-            };
-
-            let fileRelativePath = file.relativePath;
-
-            // Database specific
-            if (fileRelativePath.includes('mongodb.')) {
-                if (database !== 'mongodb') {
-                    return;
-                } else {
-                    fileRelativePath = fileRelativePath.replace('mongodb.', '');
-                }
-            }
-
-            if (fileRelativePath.includes('mysql.')) {
-                if (database !== 'mysql') {
-                    return;
-                } else {
-                    fileRelativePath = fileRelativePath.replace('mysql.', '');
-                }
-            }
-
-            switch (file.extension) {
-                case '.hbs':
-                    // Compile the Handlebars template for content
-                    const templateContent = fs.readFileSync(file.fullPath, 'utf8');
-                    const compiledTemplate = Handlebars.compile(templateContent);
-                    const renderedContent = compiledTemplate(templateArgs);
-
-                    // Compile the Handlebars template for the filename (excluding .hbs)
-                    const filenameTemplate = Handlebars.compile(fileRelativePath.replace(/\.hbs$/, ''));
-                    const renderedFilename = filenameTemplate(templateArgs);
-                    targetPath = path.join(serviceDir, renderedFilename);
-
-                    // Ensure directory exists
-                    fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-                    fs.writeFileSync(targetPath, renderedContent, 'utf8');
-                    break;
-                default:
-                    // By default, copy the file to the service directory
-                    sourcePath = file.fullPath;
-                    targetPath = path.join(serviceDir, fileRelativePath);
-                    fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-                    fs.copyFileSync(sourcePath, targetPath);
-                    break;
-            }
+        scaffolder.scaffoldHandlebarTemplates({
+            templateFiles: templateFiles,
+            serviceDir: serviceDir,
+            database: database,
+            templateArgs: templateArgs
         });
 
         // Scaffold deploy.yml
@@ -448,5 +402,116 @@ export const scaffolder = {
         // write deploy.yml file
         const deployYmlContent = yaml.dump(deploy);
         fs.writeFileSync(deployPath, deployYmlContent, 'utf8');
+    },
+
+    /**
+     * Create new entity in existing service
+     * 
+     * @param {object} param
+     * @param {string} param.entityName - The name of the entity to create
+     * @param {string} param.inService - The service in which to add the entity
+     * @param {string} param.serviceDir - The service directory where the entity will be created
+     * @param {string} param.database - The database type (e.g., 'mysql', 'mongodb')
+     * @returns {object} - An object containing a success message
+     */
+    createNewEntity: ({ entityName, inService, serviceDir, database }) => {
+
+        entityName = entityName.toLowerCase();
+
+        // validate serviceDir exists
+        if (!fs.existsSync(serviceDir)) {
+            throw new Error(`Service directory "${serviceDir}" does not exist`);
+        }
+
+        // Get all files in the templates directory
+        const templateFiles = scaffolder.getAllTemplateFiles({
+            dir: directories.scaffolderEntityTemplates,
+            baseDir: directories.scaffolderEntityTemplates
+        });
+
+        // scaffold the hbs templates
+        const templateArgs = {
+            entityName: entityName,
+            serviceName: inService,
+            database: database
+        };
+
+        scaffolder.scaffoldHandlebarTemplates({
+            templateFiles: templateFiles,
+            serviceDir: serviceDir,
+            database: database,
+            templateArgs: templateArgs
+        });
+    },
+
+    /**
+     * Scaffold handlebar templates
+     *
+     * @param {object} param
+     * @param {string} param.templateFiles - The list of template files
+     * @param {string} param.serviceDir - The service directory
+     * @param {string} param.serviceName - The service name
+     * @param {string} param.database - The database type
+     * @param {object} param.templateArgs - The template arguments
+     */
+    scaffoldHandlebarTemplates: function ({ templateFiles, serviceDir, serviceName, database, templateArgs }) {
+        try {
+            // Register Handlebars helpers
+            Object.entries(helpers).forEach(([name, fn]) => {
+                Handlebars.registerHelper(name, fn);
+            });
+
+            // Write the files to the service directory
+            templateFiles.forEach(file => {
+                let sourcePath;
+                let targetPath;
+
+                let fileRelativePath = file.relativePath;
+
+                // Database specific
+                if (fileRelativePath.includes('mongodb.')) {
+                    if (database !== 'mongodb') {
+                        return;
+                    } else {
+                        fileRelativePath = fileRelativePath.replace('mongodb.', '');
+                    }
+                }
+
+                if (fileRelativePath.includes('mysql.')) {
+                    if (database !== 'mysql') {
+                        return;
+                    } else {
+                        fileRelativePath = fileRelativePath.replace('mysql.', '');
+                    }
+                }
+
+                switch (file.extension) {
+                    case '.hbs':
+                        // Compile the Handlebars template for content
+                        const templateContent = fs.readFileSync(file.fullPath, 'utf8');
+                        const compiledTemplate = Handlebars.compile(templateContent);
+                        const renderedContent = compiledTemplate(templateArgs);
+
+                        // Compile the Handlebars template for the filename (excluding .hbs)
+                        const filenameTemplate = Handlebars.compile(fileRelativePath.replace(/\.hbs$/, ''));
+                        const renderedFilename = filenameTemplate(templateArgs);
+                        targetPath = path.join(serviceDir, renderedFilename);
+
+                        // Ensure directory exists
+                        fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+                        fs.writeFileSync(targetPath, renderedContent, 'utf8');
+                        break;
+                    default:
+                        // By default, copy the file to the service directory
+                        sourcePath = file.fullPath;
+                        targetPath = path.join(serviceDir, fileRelativePath);
+                        fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+                        fs.copyFileSync(sourcePath, targetPath);
+                        break;
+                }
+            });
+        } catch (error) {
+            throw new Error('Error scaffolding Handlebars templates: ' + error.message);
+        }
     }
 }
