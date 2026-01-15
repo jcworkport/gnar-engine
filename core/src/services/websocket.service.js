@@ -86,11 +86,9 @@ export const wsManager = {
      */
     startServer(port = 5000) {
         const wss = new WebSocketServer({ port });
-        loggerService.info(`WS Server listening on port ${port}`);
 
         wss.on('connection', (ws, req) => {
             const serviceName = this.identifyPeer(req);
-            loggerService.info(`Inbound connection from ${serviceName}`);
             this.wsMap.set(serviceName, ws);
 
             ws.on('message', (raw) => {

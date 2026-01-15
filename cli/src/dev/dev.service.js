@@ -6,7 +6,7 @@ import path from "path";
 import { fileURLToPath } from 'url';
 import yaml from "js-yaml";
 import { gnarEngineCliConfig } from "../config.js";
-import { buildImage, upContainer, createBridgeNetwork } from "../services/docker.js";
+import { buildImage, createContainer, createBridgeNetwork } from "../services/docker.js";
 import { directories } from "../config.js";
 
 
@@ -259,7 +259,6 @@ async function buildAndUpContainers({ config, secrets, gnarHiddenDir, projectDir
             if (secrets.services?.[svc.name]) {
                 secrets.services[svc.name].NODE_ENV = 'test';
 
-                console.log(testService, svc.name);
                 if (testService && svc.name === testService) {
                     secrets.services[svc.name].RUN_TESTS = 'true';
                 }
@@ -292,10 +291,10 @@ async function buildAndUpContainers({ config, secrets, gnarHiddenDir, projectDir
     ];
 
     if (coreDev) {
-        provisionerBinds.push(`../../../core/:${gnarEngineCliConfig.corePath}`);
+        provisionerBinds.push(`${gnarEngineCliConfig.coreDevPath}:${gnarEngineCliConfig.corePath}`);
     }
 
-    const provisioner = await upContainer({
+    const provisioner = await createContainer({
         name: provisionerTag,
         image: provisionerTag,
         env: {
@@ -307,10 +306,12 @@ async function buildAndUpContainers({ config, secrets, gnarHiddenDir, projectDir
         attach: attachAll,
         network: networkName
     });
+    services[provisionerTag] = provisioner;
 
     // Nginx
-    await upContainer({
-        name: `ge-${config.environment}-${config.namespace}-nginx`,
+    const nginxName = `ge-${config.environment}-${config.namespace}-nginx`;
+    services[nginxName] = await createContainer({
+        name: nginxName,
         image: 'nginx:latest',
         ports: { 80: 80, 443: 443 },
         binds: [
@@ -322,8 +323,9 @@ async function buildAndUpContainers({ config, secrets, gnarHiddenDir, projectDir
     });
 
     // Rabbit MQ 
-    await upContainer({
-        name: `ge-${config.environment}-${config.namespace}-rabbitmq`,
+    const rabbitMqName = `ge-${config.environment}-${config.namespace}-rabbitmq`;
+    services[rabbitMqName] = await createContainer({
+        name: rabbitMqName,
         image: 'rabbitmq:management',
         env: {
             RABBITMQ_DEFAULT_USER: secrets.global.RABBITMQ_USER || '',
@@ -332,7 +334,8 @@ async function buildAndUpContainers({ config, secrets, gnarHiddenDir, projectDir
         ports: { 5672: 5672, 15672: 15672 },
         binds: [],
         attach: attachAll,
-        network: networkName
+        network: networkName,
+        aliases: ['rabbitmq']
     });
 
     // services
@@ -376,7 +379,7 @@ async function buildAndUpContainers({ config, secrets, gnarHiddenDir, projectDir
         ];
 
         if (coreDev) {
-            serviceVolumes.push(`../../../core/:${gnarEngineCliConfig.corePath}`);
+            serviceVolumes.push(`${gnarEngineCliConfig.coreDevPath}:${gnarEngineCliConfig.corePath}`);
         }
 
         // split from "port:port" to { port: port }
@@ -386,7 +389,7 @@ async function buildAndUpContainers({ config, secrets, gnarHiddenDir, projectDir
             ports[containerPort] = hostPort;
         }
 
-        await upContainer({
+        services[svcTag] = await createContainer({
             name: svcTag,
             image: svcTag,
             command: svc.command || [],
@@ -395,7 +398,8 @@ async function buildAndUpContainers({ config, secrets, gnarHiddenDir, projectDir
             binds: serviceVolumes,
             restart: 'always',
             attach: true,
-            network: networkName
+            network: networkName,
+            aliases: [`${svc.name}-service`]
         });
 
         // check if mysql service required
@@ -422,7 +426,8 @@ async function buildAndUpContainers({ config, secrets, gnarHiddenDir, projectDir
                 continue;
             }
 
-            await upContainer({
+            const mysqlContainerName = `ge-${config.environment}-${config.namespace}-${host}`;
+            services[mysqlContainerName] = await createContainer({
                 name: `ge-${config.environment}-${config.namespace}-${host}`,
                 image: 'mysql',
                 env: {
@@ -437,7 +442,8 @@ async function buildAndUpContainers({ config, secrets, gnarHiddenDir, projectDir
                 ],
                 restart: 'always',
                 attach: attachAll,
-                network: networkName
+                network: networkName,
+                aliases: [host]
             });
 
             mysqlPortsCounter++;
@@ -451,7 +457,8 @@ async function buildAndUpContainers({ config, secrets, gnarHiddenDir, projectDir
                 continue;
             }
 
-            await upContainer({
+            const mongoContainerName = `ge-${config.environment}-${config.namespace}-${host}`;
+            services[mongoContainerName] = await createContainer({
                 name: `ge-${config.environment}-${config.namespace}-${host}`,
                 image: 'mongo:latest',
                 env: {
@@ -467,13 +474,20 @@ async function buildAndUpContainers({ config, secrets, gnarHiddenDir, projectDir
                 ],
                 restart: 'always',
                 attach: attachAll,
-                network: networkName
+                network: networkName,
+                aliases: [host]
             });
 
             // increment mongo port for next service as required
             mongoPortsCounter++;
         }
     }
+
+    // start the containers
+    Object.keys(services).forEach(async (key) => {
+        const container = services[key];
+        container.start();
+    });
 }
 
 /**

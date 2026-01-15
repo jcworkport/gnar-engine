@@ -36,7 +36,7 @@ export async function buildImage({ context, dockerfile, imageTag }) {
 }
 
 /**
- * Create & start docker container
+ * Create docker container
  *
  * @param {Object} options
  * @param {string} options.name - Container name
@@ -50,18 +50,19 @@ export async function buildImage({ context, dockerfile, imageTag }) {
  * @param {string} [options.network] - Network name
  * @returns {Promise<Docker.Container>} - The started container
  */
-export async function upContainer({ name, image, command = [], env = {}, ports = {}, binds = [], restart = 'always', attach = true, network }) {
+export async function createContainer({ name, image, command = [], env = {}, ports = {}, binds = [], restart = 'always', attach = true, network, aliases = [] }) {
 
     // remove container first
     try {
         const existingContainer = docker.getContainer(name);
+        await existingContainer.inspect();
         await existingContainer.remove({ force: true });
     } catch (err) {
         // Container does not exist, ignore
     }
 
     // create container
-    const container = await docker.createContainer({
+    const containerConfig = {
         name,
         Image: image,
         Cmd: command,
@@ -75,12 +76,13 @@ export async function upContainer({ name, image, command = [], env = {}, ports =
                     [{ HostPort: String(hPort) }]
                 ])
             ),
-            NetworkMode: network,
         },
         ExposedPorts: Object.fromEntries(
             Object.keys(ports).map(p => [`${p}/tcp`, {}])
         )
-    });
+    };
+
+    const container = await docker.createContainer(containerConfig);
 
     // Attach logs before starting the container
     if (attach) {
@@ -91,7 +93,12 @@ export async function upContainer({ name, image, command = [], env = {}, ports =
         container.modem.demuxStream(stream, stdoutStream, stderrStream);
     }
 
-    await container.start();
+    await docker.getNetwork(network).connect({
+        Container: container.id,
+        EndpointConfig: {
+            Aliases: aliases
+        }
+    });
 
     return container;
 }
@@ -109,6 +116,10 @@ export async function createBridgeNetwork({ name }) {
             CheckDuplicate: true
         });
     } catch (err) {
+        if (err.statusCode === 409) {
+            // network already exists, ignore
+            return;
+        }
         console.error(err);
     }
 }
@@ -121,13 +132,16 @@ export async function createBridgeNetwork({ name }) {
  */
 function createPrefixStream(name, targetStream) {
     const color = colorForName(name);
+    const labelWidth = 38;
+    name = '[' + name + ']';
+    const paddedName = name.padEnd(labelWidth, ' ');
 
     return new Writable({
         write(chunk, encoding, callback) {
             const lines = chunk.toString().split(/\r?\n/);
             for (const line of lines) {
                 if (line.trim()) {
-                    targetStream.write(`${color}[${name}]${RESET} ${line}\n`);
+                    targetStream.write(`${color}${paddedName}${RESET} ${line}\n`);
                 }
             }
             callback();
