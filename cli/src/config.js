@@ -3,14 +3,14 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
 export const gnarEngineCliConfig = {
 
-    /**
-     * The path the Gnar Engine service core should be found in the service containers
-     */
+    // The path the Gnar Engine service core should be found in the service containers
     corePath: '/usr/gnar_engine/app/node_modules/@gnar-engine/core',
-    coreDevPath: path.join(__dirname, '../../core'),
 
+    // The path to the core source code on the host machine (core dev mode)
+    coreDevPath: path.join(__dirname, '../../core'),
 }
 
 export const directories = {

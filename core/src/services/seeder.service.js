@@ -16,7 +16,6 @@ export const seeders = {
             loggerService.info("Running seeders");
 
             seeders.config = config;
-            loggerService.info("Seeders config: " + JSON.stringify(seeders.config));
 
             // Get node env
             const nodeEnv = process.env.NODE_ENV || 'development';

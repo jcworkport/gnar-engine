@@ -8,7 +8,7 @@ WORKDIR /usr/gnar_engine/app
 ENV GLOBAL_SERVICE_BASE_DIR=/usr/gnar_engine/app/src/
 
 # Copy package.json and package-lock.json
-COPY ./services/notification/package*.json ./
+COPY ./package*.json ./
 
 # Install nodemon
 RUN npm install -g nodemon
@@ -18,6 +18,3 @@ RUN npm install
 
 # Expose the port the service will run on
 EXPOSE 3000
-
-# Start the application
-CMD ["nodemon", "--watch", "./gnar_engine", "./gnar_engine/app.js"]

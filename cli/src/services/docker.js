@@ -1,6 +1,7 @@
 import Docker from 'dockerode';
 import { Writable } from 'stream';
 import path from 'path';
+import tar from 'tar-fs';
 import fs from 'fs';
 
 const docker = new Docker();
@@ -12,24 +13,38 @@ const docker = new Docker();
  * @param {string} options.context - The build context directory
  * @param {string} options.dockerfile - The Dockerfile path relative to the context
  * @param {string} options.imageTag - The tag to assign to the built image
+ * @param {boolean} [options.nocache=true] - Whether to build without cache
  */
-export async function buildImage({ context, dockerfile, imageTag }) {
+export async function buildImage({ context, dockerfile, imageTag, nocache = true }) {
 
     console.log('Building image...', imageTag);
 
-    const tarStream = await docker.buildImage(
-        {
-            context: context,
-            src: fs.readdirSync(context)
-        },
-        {
-            t: imageTag,
-            dockerfile
-        }
-    );
+    // Create a tar stream of the full context folder
+    const tarStream = tar.pack(context);
+
+    const stream = await docker.buildImage(tarStream, {
+        t: imageTag,
+        dockerfile,
+        nocache
+    });
 
     await new Promise((resolve, reject) => {
-        docker.modem.followProgress(tarStream, (err) => (err ? reject(err) : resolve()));
+        docker.modem.followProgress(
+            stream,
+            (err, res) => {
+                if (err) return reject(err);
+                resolve(res);
+            },
+            (event) => {
+                if (event.stream) process.stdout.write(event.stream);
+
+                // Catch BuildKit-style errors
+                if (event.error) return reject(new Error(event.error));
+                if (event.errorDetail && event.errorDetail.message) {
+                    return reject(new Error(event.errorDetail.message));
+                }
+            }
+        );
     });
 
     console.log('Built image:', imageTag);

@@ -8,13 +8,10 @@ WORKDIR /usr/gnar_engine/app
 ENV GLOBAL_SERVICE_BASE_DIR=/usr/gnar_engine/app/src/
 
 # Copy package.json and package-lock.json
-COPY ./services/portal/ ./
+COPY ./ ./
 
 # Install app dependencies
 RUN npm install
 
 # Expose the port the service will run on
 EXPOSE 5173
-
-# Start the application
-CMD ["npm", "run", "start:dev"]

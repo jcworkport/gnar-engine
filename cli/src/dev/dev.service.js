@@ -70,7 +70,8 @@ export async function up({ projectDir, build = false, detach = false, coreDev = 
         bootstrapDev: bootstrapDev,
         test: test,
         testService: testService,
-        attachAll: attachAll
+        attachAll: attachAll,
+        build: build,
     });
 
     // // up docker-compose
@@ -279,7 +280,8 @@ async function buildAndUpContainers({ config, secrets, gnarHiddenDir, projectDir
         await buildImage({
             context: directories.provisioner,
             dockerfile: 'Dockerfile',
-            imageTag: provisionerTag
+            imageTag: provisionerTag,
+            nocache: false
         });
     }
 
@@ -348,7 +350,8 @@ async function buildAndUpContainers({ config, secrets, gnarHiddenDir, projectDir
             await buildImage({
                 context: path.resolve(projectDir, 'services', svc.name),
                 dockerfile: 'Dockerfile',
-                imageTag: svcTag
+                imageTag: svcTag,
+                nocache: false
             });
         }
 
@@ -396,7 +399,7 @@ async function buildAndUpContainers({ config, secrets, gnarHiddenDir, projectDir
             env: env,
             ports: ports,
             binds: serviceVolumes,
-            restart: 'always',
+            restart: 'no',
             attach: true,
             network: networkName,
             aliases: [`${svc.name}-service`]
