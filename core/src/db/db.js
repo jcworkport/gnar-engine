@@ -223,10 +223,18 @@ export const resetMysqlDb = async () => {
 
     try {
         const [tables] = await db.query("SHOW TABLES");
+        
+        // Disable foreign key checks to allow truncating tables with dependencies
+        await db.query("SET FOREIGN_KEY_CHECKS = 0");
+
         for (const row of tables) {
             const tableName = Object.values(row)[0];
             await db.query(`DROP TABLE \`${tableName}\``);
         }
+
+        // Re-enable foreign key checks
+        await db.query("SET FOREIGN_KEY_CHECKS = 1");
+        
         console.log('MySQL database reset successfully');
     } catch (error) {
         console.error('Error resetting MySQL database: ' + error.message);
