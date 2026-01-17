@@ -217,8 +217,8 @@ export const resetMysqlDb = async () => {
         throw new Error('Database connection not initialized');
     }
 
-    if (config.environment !== 'test') {
-        throw new Error('Cannot reset mysql database outside of test mode!');
+    if (config.environment !== 'test' && config.environment !== 'development') {
+        throw new Error('Cannot reset mysql database outside of test or development mode!');
     }
 
     try {

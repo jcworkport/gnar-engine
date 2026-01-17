@@ -1,5 +1,5 @@
 import { loggerService } from "./logger.service.js";
-import { db } from "../db/db.js";
+import { db, resetMysqlDb } from "../db/db.js";
 import fs from 'fs';
 import path from 'path';
 
@@ -13,8 +13,18 @@ export const migrations = {
     // run migrations
     runMigrations: async ({config}) => {
         try {
+            if (config.db.type !== 'mysql') {
+                loggerService.info("Migrations only supported for MySQL");
+                return;
+            }
+
+            if (config.resetDatabase && (config.environment == 'development' || config.envenvironment == 'test')) {
+                loggerService.info("Resetting database...");
+                await resetMysqlDb();
+            }
+
             loggerService.info("Running migrations");
-    
+
             migrations.config = config;
 
             // Get migration files
@@ -25,7 +35,7 @@ export const migrations = {
             for (const migrationName of files) {
                 const migrationFile = path.join(migrationsPath, migrationName);
                 const migration = await import(migrationFile);
-    
+
                 if (!(await migrations.checkMigrationAlreadyRun(migrationName))) {
                     // Run migration
                     loggerService.info("Running migration: " + migrationName);

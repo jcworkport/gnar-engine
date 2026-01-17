@@ -8,9 +8,11 @@ import yaml from "js-yaml";
 import { gnarEngineCliConfig } from "../config.js";
 import { buildImage, createContainer, createBridgeNetwork } from "../services/docker.js";
 import { directories } from "../config.js";
-
+import { exec } from 'child_process';
+import { promisify } from 'util';
 
 const docker = new Docker();
+const execAsync = promisify(exec);
 
 /**
  * Start the application locally
@@ -25,11 +27,25 @@ const docker = new Docker();
  * @param {boolean} [options.bootstrapDev=false] - Whether to set the cli/src/bootstrap directory as the project directory
  * @param {boolean} [options.test=false] - Whether to run tests with ephemeral databases
  * @param {string} [options.testService=''] - The service to run tests for (only applicable if test=true)
+ * @param {boolean} [options.resetDatabases=false] - Whether to drop all service databases, re-running all migrations and seeders
+ * @param {string} [options.resetDatabase=''] - The service database to drop, re-running all migrations and seeders
  * @param {boolean} [options.removeOrphans=true] - Whether to remove orphaned containers
  * @param {boolean} [options.attachAll=false] - Attach all services including database and message queues for debugging
  */
-export async function up({ projectDir, build = false, detach = false, coreDev = false, bootstrapDev = false, test = false, testService = '', removeOrphans = true, attachAll = false}) {
-    
+export async function up({ 
+        projectDir,
+        build = false,
+        detach = false, 
+        coreDev = false, 
+        bootstrapDev = false, 
+        test = false, 
+        testService = '', 
+        resetDatabases = false,
+        resetDatabase = '',
+        removeOrphans = true, 
+        attachAll = false
+    }) {
+
     // bootstrap dev
     if (bootstrapDev) {
         const fileDir = path.dirname(new URL(import.meta.url).pathname);
@@ -59,7 +75,7 @@ export async function up({ projectDir, build = false, detach = false, coreDev = 
     });
     await fs.writeFile(nginxConfPath, nginxConf);
 
-    // create docker-compose.yml dynamically from parsed config and secrets
+    // create and up containers
     const dockerComposePath = path.join(gnarHiddenDir, "docker-compose.dev.yml");
     const dockerCompose = await buildAndUpContainers({
         config: parsedConfig.config,
@@ -70,43 +86,11 @@ export async function up({ projectDir, build = false, detach = false, coreDev = 
         bootstrapDev: bootstrapDev,
         test: test,
         testService: testService,
+        resetDatabases: resetDatabases,
+        resetDatabase: resetDatabase,
         attachAll: attachAll,
         build: build,
     });
-
-    // // up docker-compose
-    // const args = ["-f", dockerComposePath, "up"];
-    //
-    // if (build) {
-    //     args.push("--build");
-    // }
-    //
-    // if (detach) {
-    //     args.push("-d");
-    // }
-    //
-    // if (removeOrphans) {
-    //     args.push("--remove-orphans")
-    // }
-
-    // const processRef = spawn(
-    //     "docker-compose",
-    //     args,
-    //     {
-    //         cwd: projectDir,
-    //         stdio: "inherit",
-    //         shell: "/bin/sh"
-    //     }
-    // );
-    //
-    // // handle exit
-    // const exitCode = await new Promise((resolve) => {
-    //     processRef.on("close", resolve);
-    // });
-    //
-    // if (exitCode !== 0) {
-    //     throw new Error(`docker-compose up exited with code ${exitCode}`);
-    // }
 }
 
 /**
@@ -145,6 +129,15 @@ export async function down({ projectDir, allContainers = false }) {
         })
     );
 
+    // // remove bound mounts
+    // await Promise.all(
+    //     containers.map(async c => {
+    //         const container = docker.getContainer(c.Id);
+    //         const containerInfo = await container.inspect();
+    //         await removeBindMounts({ containerInfo: containerInfo });
+    //     })
+    // );
+
     // remove each container
     await Promise.all(
         containers.map(c => {
@@ -156,6 +149,26 @@ export async function down({ projectDir, allContainers = false }) {
     );
 
     console.log('Containers stopped and removed.');
+}
+
+/**
+ * Remove bind mounts
+ *
+ * @param {object} containerInfo
+ */
+export async function removeBindMounts({containerInfo}) {
+
+    const binds = containerInfo.HostConfig.Binds || [];
+
+    for (const bind of binds) {
+        const hostPath = bind.split(':')[0];
+        try {
+            await execAsync(`sudo umount ${hostPath}`);
+            console.log(`Unmounted ${hostPath}`);
+        } catch (err) {
+            console.warn(`Failed to unmount ${hostPath}: ${err.message}`);
+        }
+    }
 }
 
 /**
@@ -237,9 +250,24 @@ export async function createDynamicNginxConf({ config, serviceConfDir, projectDi
  * @param {boolean} build - Whether to re-build images
  * @param {boolean} test - Whether to run tests with ephemeral databases
  * @param {string} testService - The service to run tests for (only applicable if test=true)
+ * @param {boolean} resetDatabases - Whether to drop all service databases, re-running all migrations and seeders
+ * @
  * @param {boolean} attachAll - Whether to attach to all containers' stdio (otherwise databases and message queue are detached)
  */
-async function buildAndUpContainers({ config, secrets, gnarHiddenDir, projectDir, coreDev = false, bootstrapDev = false, build = false, test = false, testService, attachAll = false }) {
+async function buildAndUpContainers({ 
+        config, 
+        secrets, 
+        gnarHiddenDir, 
+        projectDir, 
+        coreDev = false, 
+        bootstrapDev = false, 
+        build = false, 
+        test = false, 
+        testService, 
+        resetDatabases = false,
+        resetDatabase = '',
+        attachAll = false 
+    }) {
     
     let mysqlPortsCounter = 3306;
     let mongoPortsCounter = 27017;
@@ -249,9 +277,10 @@ async function buildAndUpContainers({ config, secrets, gnarHiddenDir, projectDir
 
     console.log('========   g n a r   e n g i n e   ========');
     console.log('⛏️  Starting development environment...');
-    
-    // test mode env var adjustments
+
+    // env var adjustments
     for (const svc of config.services) {
+        // Tests
         if (test) {
             if (secrets.services?.[svc.name]?.MYSQL_HOST) {
                 secrets.services[svc.name].MYSQL_HOST = 'db-mysql-test';
@@ -262,6 +291,22 @@ async function buildAndUpContainers({ config, secrets, gnarHiddenDir, projectDir
 
                 if (testService && svc.name === testService) {
                     secrets.services[svc.name].RUN_TESTS = 'true';
+                }
+            }
+        }
+
+        // Reset all databases
+        if (resetDatabases) {
+            if (secrets.services?.[svc.name]) {
+                secrets.services[svc.name].RESET_DATABASE = true;
+            }
+        }
+
+        // Reset specific database
+        else if (resetDatabase) {
+            if (svc.name === resetDatabase) {
+                if (secrets.services?.[svc.name]) {
+                    secrets.services[svc.name].RESET_DATABASE = true;
                 }
             }
         }
@@ -400,7 +445,7 @@ async function buildAndUpContainers({ config, secrets, gnarHiddenDir, projectDir
             ports: ports,
             binds: serviceVolumes,
             restart: 'no',
-            attach: true,
+            attach: svc.detach ? !svc.detach : true,
             network: networkName,
             aliases: [`${svc.name}-service`]
         });
