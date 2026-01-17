@@ -13,8 +13,10 @@ export function registerDevCommands(program) {
 		.option('-b, --build', 'Build without cache')
         .option('-d, --detach', 'Run containers in background')
         .option('-a, --attach-all', 'Attach all services including database and message queues for debugging')
-        .option('-t --test', 'Run the tests with ephemeral databases')
+        .option('-t --test', 'Run all tests with ephemeral databases *NOT IMPLEMENTED')
         .option('--test-service <service>', 'Run the tests for the specified service with ephemeral databases (e.g. --test-service user)')
+        .option('-reset-databases, --reset-databases', 'Drop all service databases, re-running all migrations and seeders *NOT IMPLEMENTED')
+        .option('--reset-database <service>', 'Drop the specified service database, re-running all migrations and seeders (e.g. --reset-database user)')
         .addOption(new Option('--core-dev').hideHelp())
         .addOption(new Option('--bootstrap-dev').hideHelp())
         .action(async (options) => {
@@ -44,6 +46,8 @@ export function registerDevCommands(program) {
                     bootstrapDev: options.bootstrapDev || false,
                     test: options.test || false,
                     testService: options.testService || '',
+                    resetDatabases: options.resetDatabases || false,
+                    resetDatabase: options.resetDatabase || '',
                     attachAll: options.attachAll || false
                  });
 			} catch (err) {
