@@ -7,8 +7,9 @@ export const config = {
     serviceName: 'controlService',
 
     // environment
-    environment: process.env.CONTROL_NODE_ENV || 'dev',
+    environment: process.env.CONTROL_NODE_ENV || 'development',
     runTests: process.env.CONTROL_RUN_TESTS || false,
+    resetDatabase: process.env.CONTROL_RESET_DATABASE || false,
 
     // microservice | modular-monolith
     architecture: process.env.GLOBAL_ARCHITECTURE || 'microservice',

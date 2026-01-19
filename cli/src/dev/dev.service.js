@@ -430,6 +430,13 @@ async function buildAndUpContainers({
             serviceVolumes.push(`${gnarEngineCliConfig.coreDevPath}:${gnarEngineCliConfig.corePath}`);
         }
 
+        if (svc.extra_binds) {
+            svc.extra_binds.forEach((bind, index) => {
+                bind = `${gnarHiddenDir}/data/${svc.name}-data/bind-${index}/:${bind}`;
+                serviceVolumes.push(bind);
+            })
+        }
+
         // split from "port:port" to { port: port }
         const ports = {};
         for (const portMapping of svc.ports || []) {

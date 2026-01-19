@@ -9,6 +9,7 @@ export const config = {
     // environment
     environment: process.env.USER_NODE_ENV || 'dev',
     runTests: process.env.USER_RUN_TESTS || false,
+    resetDatabase: process.env.USER_RESET_DATABASE || false,
 
     // microservice | modular-monolith
     architecture: process.env.GLOBAL_ARCHITECTURE || 'microservice',

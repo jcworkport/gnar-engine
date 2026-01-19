@@ -5,6 +5,11 @@ export const config = {
     // service name
     serviceName: '{{serviceName}}Service',
 
+    // environment
+    environment: process.env.{{upperCase serviceName}}_NODE_ENV || 'development',
+    runTests: process.env.{{upperCase serviceName}}_RUN_TESTS || false,
+    resetDatabase: process.env.{{upperCase serviceName}}_RESET_DATABASE || false,
+
     // microservice | modular-monolith
     architecture: process.env.GLOBAL_ARCHITECTURE || 'microservice',
 

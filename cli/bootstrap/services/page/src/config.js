@@ -5,6 +5,11 @@ export const config = {
     // service name
     serviceName: 'pageService',
 
+    // environment
+    environment: process.env.PAGE_NODE_ENV || 'developnent',
+    runTests: process.env.PAGE_RUN_TESTS || false,
+    resetDatabase: process.env.PAGE_RESET_DATABASE || false,
+
     // microservice | modular-monolith
     architecture: process.env.GLOBAL_ARCHITECTURE || 'microservice',
 
