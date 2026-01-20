@@ -4,7 +4,7 @@ import { commandBus } from './commands/command-bus.js';
 import { runSeeders, internalHealthCheck } from './commands/handlers/control.handler.js';
 import { BadRequestError, initErrorResponses, NotFoundError, UnauthorisedError, FailedHealthCheckError } from './errors/errors.js';
 import { initDbConnection, checkConnection } from './db/db.js';
-import { sqlHelpers } from './db/sql-helpers.js';
+import { sqlHelpers } from './db/helpers.js';
 import { migrations } from './services/migration.service.js';
 import { seeders } from './services/seeder.service.js';
 import { loggerService } from './services/logger.service.js';
@@ -62,6 +62,7 @@ const GnarEngine = {
 		GnarEngine.db.seeders = seeders;
 
         sqlHelpers.init(GnarEngine.db);
+        GnarEngine.db.sql = {};
         GnarEngine.db.sql.helpers = sqlHelpers;
 
 		// On ready

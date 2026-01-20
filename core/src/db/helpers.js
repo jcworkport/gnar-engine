@@ -1,11 +1,11 @@
-import loggerService from '../services/logger.service.js';
+import { loggerService } from '../services/logger.service.js';
 
 // SQL database helpers
-export const sqlHelpers {
+export const sqlHelpers = {
 
-    const db,
+    db: {},
 
-    export function init(db) {
+    init(db) {
         sqlHelpers.db = db;
     },
 
@@ -19,12 +19,12 @@ export const sqlHelpers {
      * @param {string} childColumn - The column name for the child entity ID
      * @returns {Promise<{added: Array, removed: Array}>} - The added and removed IDs
      */
-    export async function syncManyToMany({ table, parentId, childIds, parentColumn, childColumn }) {
+    async syncManyToMany({ table, parentId, childIds, parentColumn, childColumn }) {
         try {
             if (!childIds || !childIds.length) childIds = [];
 
             // Read current links from DB
-            const currentRows = await sqlHelpers,db.query(
+            const currentRows = await sqlHelpers.db.query(
                 `SELECT ${childColumn} FROM ${table} WHERE ${parentColumn} = ?`,
                 [parentId]
             );
@@ -110,5 +110,15 @@ export const sqlHelpers {
             loggerService.error('Error syncing one-to-many relationship: ' + error.message);
             throw error;
         }
+    },
+
+    /**
+     * To snake case
+     *
+     * @param {string}
+     * @returns {string}
+     */
+    toSnake(str) {
+        return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
     }
 }
