@@ -9,8 +9,8 @@ import { httpController as {{lowerCase serviceName}}PlatformHttpController } fro
 export const initService = async () => {
 
 	// Run migrations & seeders
-	db.migrations.runMigrations({config});
-	db.seeders.runSeeders({config});
+	await db.migrations.runMigrations({config});
+	await db.seeders.runSeeders({config});
 
 	// Import command handlers after the command bus is initialised
 	await import('./commands/{{lowerCase serviceName}}.handler.js');
