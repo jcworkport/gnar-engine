@@ -1,6 +1,6 @@
 import { db, utils } from '@gnar-engine/core';
 
-export const {{serviceName}} = {
+export const {{entityName}} = {
     async getById({ id }) {
         const [result] = await db.query('SELECT * FROM {{lowerCasePlural entityName}} WHERE id = ?', [id]);
 
