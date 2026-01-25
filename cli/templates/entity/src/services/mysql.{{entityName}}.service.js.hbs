@@ -2,7 +2,7 @@ import { db, utils } from '@gnar-engine/core';
 
 export const {{serviceName}} = {
     async getById({ id }) {
-        const [result] = await db.query('SELECT * FROM {{lowerCasePlural serviceName}} WHERE id = ?', [id]);
+        const [result] = await db.query('SELECT * FROM {{lowerCasePlural entityName}} WHERE id = ?', [id]);
 
         if (!result) {
             return null;
@@ -17,12 +17,12 @@ export const {{serviceName}} = {
         const offset = (pageNum - 1) * pageSize;
 
         const [rows] = await db.query(
-            'SELECT * FROM {{lowerCasePlural serviceName}} LIMIT ? OFFSET ?',
+            'SELECT * FROM {{lowerCasePlural entityName}} LIMIT ? OFFSET ?',
             [pageSize, offset]
         );
 
         const [[{ total }]] = await db.query(
-            'SELECT COUNT(*) AS total FROM {{lowerCasePlural serviceName}}'
+            'SELECT COUNT(*) AS total FROM {{lowerCasePlural entityName}}'
         );
 
         return {
@@ -44,7 +44,7 @@ export const {{serviceName}} = {
         const values = [id, ...Object.values(data)];
 
         const sql = `
-            INSERT INTO {{lowerCasePlural serviceName}} (
+            INSERT INTO {{lowerCasePlural entityName}} (
                 ${columns.join(', ')},
                 created_at,
                 updated_at
@@ -77,7 +77,7 @@ export const {{serviceName}} = {
         const values = Object.values(updatedData);
 
         const sql = `
-            UPDATE {{lowerCasePlural serviceName}}
+            UPDATE {{lowerCasePlural entityName}}
             SET
                 ${assignments.join(', ')},
                 updated_at = CURRENT_TIMESTAMP
@@ -91,7 +91,7 @@ export const {{serviceName}} = {
     },
 
     async delete({ id }) {
-        await db.query('DELETE FROM {{lowerCasePlural serviceName}} WHERE id = ?', [id]);
+        await db.query('DELETE FROM {{lowerCasePlural entityName}} WHERE id = ?', [id]);
         return true;
     },
 };
