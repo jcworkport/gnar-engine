@@ -21,14 +21,20 @@ export const sqlHelpers = {
      */
     async syncManyToMany({ table, parentId, childIds, parentColumn, childColumn }) {
         try {
-            if (!childIds || !childIds.length) childIds = [];
+            // Ensure array and remove duplicates
+            childIds = Array.from(new Set(childIds || [])).map(String);
 
             // Read current links from DB
-            const currentRows = await sqlHelpers.db.query(
+            const [rows] = await sqlHelpers.db.query(
                 `SELECT ${childColumn} FROM ${table} WHERE ${parentColumn} = ?`,
                 [parentId]
             );
-            const currentIds = currentRows.map(row => row[childColumn]);
+
+            // Normalize IDs to strings (handles Buffers for BINARY UUIDs)
+            const currentIds = rows.map(row => {
+                const val = row[childColumn];
+                return Buffer.isBuffer(val) ? val.toString('hex') : String(val);
+            });
 
             // Compute diff
             const toAdd = childIds.filter(id => !currentIds.includes(id));
@@ -46,7 +52,7 @@ export const sqlHelpers = {
             if (toAdd.length) {
                 const values = toAdd.map(id => [parentId, id]);
                 await sqlHelpers.db.query(
-                    `INSERT INTO ${table} (${parentColumn}, ${childColumn}) VALUES ?`,
+                    `INSERT IGNORE INTO ${table} (${parentColumn}, ${childColumn}) VALUES ?`,
                     [values]
                 );
             }
@@ -71,16 +77,21 @@ export const sqlHelpers = {
     async syncOneToMany({ table, parentId, childIds, parentColumn, childIdColumn = 'id' }) {
         try {
             if (!Array.isArray(childIds)) childIds = [];
+            childIds = Array.from(new Set(childIds)).map(String); // remove duplicates & normalize
 
             // Get currently linked children
-            const currentRows = await sqlHelpers.db.query(
-                `SELECT ${childIdColumn}
-                 FROM ${table}
-                 WHERE ${parentColumn} = ?`,
+            const [rows] = await sqlHelpers.db.query(
+                `SELECT ${childIdColumn} FROM ${table} WHERE ${parentColumn} = ?`,
                 [parentId]
             );
 
-            const currentIds = currentRows.map(row => row[childIdColumn]);
+            const currentIds = rows.map(row => {
+                const val = row[childIdColumn];
+                return Buffer.isBuffer(val) ? val.toString('hex') : String(val);
+            });
+
+            console.log('currentIds:', currentIds);
+            console.log('childIds:', childIds);
 
             const toLink = childIds.filter(id => !currentIds.includes(id));
             const toUnlink = currentIds.filter(id => !childIds.includes(id));
@@ -88,9 +99,7 @@ export const sqlHelpers = {
             // Unlink removed children
             if (toUnlink.length) {
                 await sqlHelpers.db.query(
-                    `UPDATE ${table}
-                     SET ${parentColumn} = NULL
-                     WHERE ${childIdColumn} IN (?)`,
+                    `UPDATE ${table} SET ${parentColumn} = NULL WHERE ${childIdColumn} IN (?)`,
                     [toUnlink]
                 );
             }
@@ -98,9 +107,7 @@ export const sqlHelpers = {
             // Link new children
             if (toLink.length) {
                 await sqlHelpers.db.query(
-                    `UPDATE ${table}
-                     SET ${parentColumn} = ?
-                     WHERE ${childIdColumn} IN (?)`,
+                    `UPDATE ${table} SET ${parentColumn} = ? WHERE ${childIdColumn} IN (?)`,
                     [parentId, toLink]
                 );
             }
@@ -120,5 +127,20 @@ export const sqlHelpers = {
      */
     toSnake(str) {
         return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+    },
+
+    /**
+     * Convert object property keys to camel case from camel case
+     *
+     * @param {Object} obj
+     * @returns {Object}
+     */
+    objectToCamelCase(obj) {
+        const newObj = {};
+        for (const key in obj) {
+            const camelKey = key.replace(/_([a-z])/g, g => g[1].toUpperCase());
+            newObj[camelKey] = obj[key];
+        }
+        return newObj;
     }
 }
