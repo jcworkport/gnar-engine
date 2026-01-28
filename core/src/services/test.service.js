@@ -1,5 +1,5 @@
 import { loggerService } from "./logger.service.js";
-import { resetMongoDb, resetMysqlDb, dbType } from '../db/db.js';
+import { resetMongoDb, resetMysqlDb, dbType, resetAllMysqlTables } from '../db/db.js';
 import assert from 'assert';
 import fs from 'fs';
 import path from 'path';
@@ -13,6 +13,11 @@ export const testService = {
     prepFns: [],
     tests: [],
     testResults: [],
+    beforeEachFns: [],   // functions to run before every test
+    afterEachFns: [],    // functions to run after every test
+
+    // skip table reset before each test flag
+    skipResetBeforeEachTest: false,
 
     // register prep function
     prep: (fn) => {
@@ -24,13 +29,41 @@ export const testService = {
         testService.tests.push({ name, fn });
     },
 
+    // register beforeEach function
+    beforeEach: (fn) => {
+        testService.beforeEachFns.push(fn);
+    },
+
+    // register afterEach function
+    afterEach: (fn) => {
+        testService.afterEachFns.push(fn);
+    },
+
+    // Internal function to reset DB tables before each test
+    resetDbTablesBeforeTest: async () => {
+        try {
+            switch (dbType) {
+                case 'mongodb':
+                    await resetMongoDb();
+                    console.log('MongoDB test database reset before test');
+                    break;
+                case 'mysql':
+                    await resetAllMysqlTables();
+                    console.log('MySQL test database tables reset before test');
+                    break;
+            }
+        } catch (err) {
+            loggerService.error('Error resetting DB before test: ' + err.message);
+            throw err;
+        }
+    },
+
     assert: assert,
 
     runCommandTests: async () => {
         console.log('==============================');
         console.log('Running command tests...');
 
-        // find all test files in the tests directory
         const testFiles = fs.readdirSync(testService.testsDirectory)
             .filter(file => file.endsWith('.js'))
             .sort();
@@ -41,7 +74,6 @@ export const testService = {
 
             const fullPath = path.join(testService.testsDirectory, file);
 
-            // import the test file (registers the tests)
             try {
                 await import(fullPath);
             } catch (err) {
@@ -63,16 +95,33 @@ export const testService = {
             // Run tests
             for (const t of testService.tests) {
                 try {
+                    // reset DB before each test if the flag is not set
+                    if (!testService.skipResetBeforeEachTest) {
+                        await testService.resetDbTablesBeforeTest();
+                    }
+                    // run beforeEach functions
+                    for (const beforeFn of testService.beforeEachFns) {
+                        await beforeFn();
+                    }
+
                     await t.fn();
                     testService.testResults.push({ name: t.name, error: null });
                 } catch (err) {
                     testService.failed++;
                     testService.testResults.push({ name: t.name, error: err });
+                } finally {
+                    // run afterEach functions
+                    for (const afterFn of testService.afterEachFns) {
+                        try {
+                            await afterFn();
+                        } catch (err) {
+                            console.error(`❌ afterEach failed: ${err.message}`);
+                        }
+                    }
                 }
             }
         }
 
-        // Summary
         console.table(testService.testResults.map(result => ({
             Test: result.name,
             Result: result.error ? `❌ Failed - ${result.error.message}` : '✅ Passed'
@@ -84,7 +133,6 @@ export const testService = {
             console.log('✅ All integration tests passed!');
         }
 
-        // Reset test databases
         try {
             switch (dbType) {
                 case 'mongodb':
