@@ -8,7 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
  */
 export const wsManager = {
 
-    // serviceName -> WebSocket
+    // serviceName -> WebSocketresetDatabase
     wsMap: new Map(),
 
     // { messageId, resolve, reject, timeout }
@@ -200,7 +200,12 @@ export const wsManager = {
      * Send a request and wait for response
      */
     async send(serviceName, commandName, payload, timeoutMs = 10000) {
-        const ws = this.wsMap.get(serviceName);
+        let ws = this.wsMap.get(serviceName);
+
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+            // poll until connected
+            ws = await this.waitForWsReady(serviceName);
+        }
 
         if (!ws || ws.readyState !== WebSocket.OPEN) {
             throw new Error(`WebSocket not connected to ${serviceName}`);
@@ -240,6 +245,24 @@ export const wsManager = {
      */
     identifyPeer(req) {
         return req.headers['x-service-name'] || `unknown-${Date.now()}`;
+    },
+
+
+    async waitForWsReady(serviceName, waitInterval = 50, maxWait = 5000) {
+        const start = Date.now();
+        while (true) {
+            const ws = this.wsMap.get(serviceName);
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                return ws;
+            }
+
+            if (Date.now() - start > maxWait) {
+                throw new Error(`WebSocket not connected to ${serviceName} after ${maxWait}ms`);
+            }
+
+            await new Promise(r => setTimeout(r, waitInterval));
+        }
     }
+
 };
 
