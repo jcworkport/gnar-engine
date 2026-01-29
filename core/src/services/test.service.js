@@ -10,18 +10,14 @@ import path from 'path';
 export const testService = {
     testsDirectory: `${process.env.GLOBAL_SERVICE_BASE_DIR}/tests/commands`,
     failed: 0,
-    prepFns: [],
+    beforeEachFns: [],
+    afterEachFns: [],
     tests: [],
     testResults: [],
-    beforeEachFns: [],   // functions to run before every test
-    afterEachFns: [],    // functions to run after every test
 
-    // skip table reset before each test flag
-    skipResetBeforeEachTest: false,
-
-    // register prep function
-    prep: (fn) => {
-        testService.prepFns.push(fn);
+    // register beforeEach function
+    beforeEach: (fn) => {
+        testService.beforeEachFns.push(fn);
     },
 
     // register test function
@@ -29,33 +25,9 @@ export const testService = {
         testService.tests.push({ name, fn });
     },
 
-    // register beforeEach function
-    beforeEach: (fn) => {
-        testService.beforeEachFns.push(fn);
-    },
-
     // register afterEach function
     afterEach: (fn) => {
         testService.afterEachFns.push(fn);
-    },
-
-    // Internal function to reset DB tables before each test
-    resetDbTablesBeforeTest: async () => {
-        try {
-            switch (dbType) {
-                case 'mongodb':
-                    await resetMongoDb();
-                    console.log('MongoDB test database reset before test');
-                    break;
-                case 'mysql':
-                    await resetAllMysqlTables();
-                    console.log('MySQL test database tables reset before test');
-                    break;
-            }
-        } catch (err) {
-            loggerService.error('Error resetting DB before test: ' + err.message);
-            throw err;
-        }
     },
 
     assert: assert,
@@ -82,41 +54,37 @@ export const testService = {
                 continue;
             }
 
-            // Run prep functions
-            for (const fn of testService.prepFns) {
-                try {
-                    await fn();
-                } catch (err) {
-                    testService.failed++;
-                    console.error(`❌ Test preparation failed - ${err.message}`);
-                }
-            }
-
-            // Run tests
+            // Foreach test
             for (const t of testService.tests) {
-                try {
-                    // reset DB before each test if the flag is not set
-                    if (!testService.skipResetBeforeEachTest) {
-                        await testService.resetDbTablesBeforeTest();
-                    }
-                    // run beforeEach functions
-                    for (const beforeFn of testService.beforeEachFns) {
-                        await beforeFn();
-                    }
 
+                // Run beforeEach prep functions
+                for (const fn of testService.beforeEachFns) {
+                    try {
+                        await fn();
+                    } catch (err) {
+                        testService.failed++;
+                        console.error(`❌ Test preparation failed - ${err.message}`);
+                        break;
+                    }
+                }
+
+                // run test
+                try {
                     await t.fn();
                     testService.testResults.push({ name: t.name, error: null });
                 } catch (err) {
                     testService.failed++;
                     testService.testResults.push({ name: t.name, error: err });
-                } finally {
-                    // run afterEach functions
-                    for (const afterFn of testService.afterEachFns) {
-                        try {
-                            await afterFn();
-                        } catch (err) {
-                            console.error(`❌ afterEach failed: ${err.message}`);
-                        }
+                }
+
+                // Run afterEach tidy up functions
+                for (const fn of testService.afterEachFns) {
+                    try {
+                        await fn();
+                    } catch (err) {
+                        testService.failed++;
+                        console.error(`❌ Test tidy up failed - ${err.message}`);
+                        break;
                     }
                 }
             }
@@ -131,20 +99,6 @@ export const testService = {
             console.error(`❌ Some Integration tests failed: ${testService.failed} error(s)`);
         } else {
             console.log('✅ All integration tests passed!');
-        }
-
-        try {
-            switch (dbType) {
-                case 'mongodb':
-                    await resetMongoDb();
-                    break;
-                case 'mysql':
-                    await resetMysqlDb();
-                    break;
-            }
-        } catch (error) {
-            loggerService.error('Error resetting test database: ' + error.message);
-            throw error;
         }
     }
 }
