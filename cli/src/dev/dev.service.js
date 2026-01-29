@@ -481,6 +481,12 @@ async function buildAndUpContainers({
                 continue;
             }
 
+            const binds = [];
+
+            if (!test) {
+                binds.push(`${gnarHiddenDir}/data/${host}-data:/var/lib/mysql`)
+            }
+
             const mysqlContainerName = `ge-${config.environment}-${config.namespace}-${host}`;
             services[mysqlContainerName] = await createContainer({
                 name: `ge-${config.environment}-${config.namespace}-${host}`,
@@ -492,9 +498,7 @@ async function buildAndUpContainers({
                 ports: {
                     [mysqlPortsCounter]: mysqlPortsCounter
                 },
-                binds: [
-                    `${gnarHiddenDir}/data/${host}-data:/var/lib/mysql`
-                ],
+                binds: binds,
                 restart: 'always',
                 attach: attachAll,
                 network: networkName,
@@ -512,6 +516,12 @@ async function buildAndUpContainers({
                 continue;
             }
 
+            const binds = [];
+
+            if (!test) {
+                binds.push(`${gnarHiddenDir}/data/${host}-data:/data/db`)
+            }
+
             const mongoContainerName = `ge-${config.environment}-${config.namespace}-${host}`;
             services[mongoContainerName] = await createContainer({
                 name: `ge-${config.environment}-${config.namespace}-${host}`,
@@ -523,10 +533,7 @@ async function buildAndUpContainers({
                 ports: {
                     [mongoPortsCounter]: 27017
                 },
-                binds: [
-                    `${gnarHiddenDir}/data/${host}-data:/data/db`,
-                    //'./mongo-init-scripts:/docker-entrypoint-initdb.d'
-                ],
+                binds: binds,
                 restart: 'always',
                 attach: attachAll,
                 network: networkName,
