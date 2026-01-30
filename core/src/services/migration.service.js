@@ -18,7 +18,7 @@ export const migrations = {
                 return;
             }
 
-            if (config.resetDatabase && (config.environment == 'development' || config.envenvironment == 'test')) {
+            if ((config.resetDatabase && config.environment == 'development') || config.environment == 'test') {
                 loggerService.info("Resetting database...");
                 await resetMysqlDb();
             }

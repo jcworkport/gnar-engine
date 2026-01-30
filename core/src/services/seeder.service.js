@@ -17,8 +17,10 @@ export const seeders = {
 
             seeders.config = config;
 
-            // Get node env
-            const nodeEnv = process.env.NODE_ENV || 'development';
+            if (config.environment == 'test') {
+                loggerService.info("Skipping seeders in test environment");
+                return;
+            }
 
             // Get seeder files
             let seedersPath;

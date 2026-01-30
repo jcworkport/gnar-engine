@@ -186,6 +186,25 @@ export const checkConnection = async () => {
 }
 
 /**
+ * Drop databases data
+ */
+export const dropDatabaseData = async () => {
+    if (!db) {
+        throw new Error('Database connection not initialized');
+    }
+
+    try {
+        if (dbType === 'mongodb') {
+            await db.dropDatabase();
+        } else if (dbType === 'mysql') {
+            await resetMysqlDb();
+        }
+    } catch (error) {
+        console.error('Error dropping database data: ' + error.message);
+    }
+}
+
+/**
  * Reset mongoDb database (for tests)
  */
 export const resetMongoDb = async () => {
@@ -223,6 +242,7 @@ export const resetMysqlDb = async () => {
 
     try {
         const [tables] = await db.query("SHOW TABLES");
+        console.log('dropping tables', tables);
 
         // Disable foreign key checks to allow truncating tables with dependencies
         await db.query("SET FOREIGN_KEY_CHECKS = 0");
@@ -242,9 +262,6 @@ export const resetMysqlDb = async () => {
     }
 }
 
-/**
- * Reset mysql database tables (for tests)
- */
 /**
  * Reset all MySQL tables (truncate all tables, keeps structure)
  */
@@ -278,9 +295,9 @@ export const resetAllMysqlTables = async () => {
         // Re-enable foreign key checks
         await db.query("SET FOREIGN_KEY_CHECKS = 1");
 
-        console.log('All MySQL tables reset successfully');
+        loggerService.info('All MySQL tables reset successfully');
     } catch (error) {
-        console.error('Error resetting MySQL tables: ' + error.message);
+        loggerService.error('Error resetting MySQL tables: ' + error.message);
         throw error;
     }
 }
