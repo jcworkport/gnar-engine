@@ -55,7 +55,9 @@ export const testService = {
             }
 
             // Foreach test
+            let testNum = 0;
             for (const t of testService.tests) {
+                testNum++;
 
                 // Run beforeEach prep functions
                 for (const fn of testService.beforeEachFns) {

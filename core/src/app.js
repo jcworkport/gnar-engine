@@ -86,7 +86,7 @@ const GnarEngine = {
         GnarEngine.webSockets = wsManager;
 
 		// Register core handlers
-        GnarEngine.commands.register(`${config.serviceName}.runMigrations`, () => migrations.runMigrations({config}));
+        GnarEngine.commands.register(`${config.serviceName}.runMigrations`, async () => await migrations.runMigrations({config}));
 		GnarEngine.commands.register(`${config.serviceName}.runSeeders`, seeders.runSeeders);
 		GnarEngine.commands.register(`${config.serviceName}.internalHealthCheck`, internalHealthCheck);
         GnarEngine.commands.register(`${config.serviceName}.dropDatabaseData`, dropDatabaseData);
