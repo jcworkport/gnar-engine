@@ -11,31 +11,35 @@ export const seeders = {
     config: null,
 
     // run seeders
-    runSeeders: async ({config}) => {
+    runSeeders: async ({ config, seeder }) => {
         try {
-            loggerService.info("Running seeders");
-
-            seeders.config = config;
-
-            if (config.environment == 'test') {
-                loggerService.info("Skipping seeders in test environment");
+            // skip automatic seeding in test env unless specific seeder is provided
+            if (config.environment == 'test' && !seeder) {
                 return;
             }
+
+            loggerService.info("Running seeders");
+            seeders.config = config;
 
             // Get seeder files
             let seedersPath;
             let files;
 
             try {
-                seedersPath = process.env.GLOBAL_SERVICE_BASE_DIR + '/db/seeders/' + nodeEnv;
+                if (seeder) {
+                    seedersPath = process.env.GLOBAL_SERVICE_BASE_DIR + '/db/seeders/' + seeder;
+                } else {
+                    seedersPath = process.env.GLOBAL_SERVICE_BASE_DIR + '/db/seeders/' + config.environment;
+                }
+
                 files = (await fs.promises.readdir(seedersPath)).sort();
 
                 if (files.length == 0) {
-                    loggerService.info("No seeders found for environment: " + nodeEnv);
+                    loggerService.info("No seeders found for environment: " + config.environment);
                     return;
                 }
             } catch (err) {
-                loggerService.info("No seeders found for environment: " + nodeEnv);
+                loggerService.info("No seeders found for environment: " + config.environment);
                 return;
             }
 

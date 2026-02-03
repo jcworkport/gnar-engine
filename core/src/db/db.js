@@ -242,7 +242,6 @@ export const resetMysqlDb = async () => {
 
     try {
         const [tables] = await db.query("SHOW TABLES");
-        console.log('dropping tables', tables);
 
         // Disable foreign key checks to allow truncating tables with dependencies
         await db.query("SET FOREIGN_KEY_CHECKS = 0");
