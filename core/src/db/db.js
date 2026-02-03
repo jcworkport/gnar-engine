@@ -42,7 +42,7 @@ export const initDbConnection = async (config) => {
                     connectionLimit: config.connectionLimit,
                     queueLimit: config.queueLimit
                 });
-                
+
             default:
                 throw new Error('Unsupported database type: ' + config.type);
         }
@@ -64,7 +64,7 @@ export const initDbConnection = async (config) => {
  * @param {Object} [connectionArgs={}] - Additional connection options.
  * @returns {Promise<MongoClient>} The MongoDB client.
  */
-const initMongoDbConnection = async ({host, user, password, database, port = 27017, connectionArgs = {}}) => {
+const initMongoDbConnection = async ({ host, user, password, database, port = 27017, connectionArgs = {} }) => {
     try {
         loggerService.info('Connecting to mongo..');
         const connectionUrl = `mongodb://${user}:${encodeURIComponent(password)}@${host}:${port}/${database}`;
@@ -92,7 +92,7 @@ const initMongoDbConnection = async ({host, user, password, database, port = 270
  * @param {number} [config.queueLimit=20] - Maximum number of queued connection requests.
  * @returns {Promise<mysql.Pool>} The MySQL connection pool.
  */
-const initMysqlConnection = async ({host, user, password, database, connectionLimit = 10, queueLimit = 20, maxRetries = 5}) => {
+const initMysqlConnection = async ({ host, user, password, database, connectionLimit = 10, queueLimit = 20, maxRetries = 5 }) => {
     if (db) return db;
 
     let retries = 0;
@@ -124,7 +124,7 @@ const initMysqlConnection = async ({host, user, password, database, connectionLi
             loggerService.error(`MySQL connection attempt ${retries + 1} failed: ${error.message}`);
             retries++;
 
-            if  (retries >= maxRetries) {
+            if (retries >= maxRetries) {
                 loggerService.error('Max retries reached. Could not connect to MySQL.');
                 throw new Error('Could not connect to the database after multiple attempts');
             }
@@ -146,7 +146,7 @@ const initMysqlConnection = async ({host, user, password, database, connectionLi
  * @param {string} config.database - MySQL database name.
  * @returns {Promise<void>}
  */
-const assertDbExists = async ({host, user, password, database}) => {
+const assertDbExists = async ({ host, user, password, database }) => {
     loggerService.info(`[assertDbExists] Attempting to connect to MySQL on host ${host} as ${user}`);
     loggerService.info(`[assertDbExists] Target DB: ${database}`);
 
@@ -186,6 +186,25 @@ export const checkConnection = async () => {
 }
 
 /**
+ * Drop databases data
+ */
+export const dropDatabaseData = async () => {
+    if (!db) {
+        throw new Error('Database connection not initialized');
+    }
+
+    try {
+        if (dbType === 'mongodb') {
+            await db.dropDatabase();
+        } else if (dbType === 'mysql') {
+            await resetMysqlDb();
+        }
+    } catch (error) {
+        console.error('Error dropping database data: ' + error.message);
+    }
+}
+
+/**
  * Reset mongoDb database (for tests)
  */
 export const resetMongoDb = async () => {
@@ -210,7 +229,7 @@ export const resetMongoDb = async () => {
 }
 
 /**
- * Reset mysql databse (for tests)
+ * Reset mysql database (for tests)
  */
 export const resetMysqlDb = async () => {
     if (!db) {
@@ -223,7 +242,7 @@ export const resetMysqlDb = async () => {
 
     try {
         const [tables] = await db.query("SHOW TABLES");
-        
+
         // Disable foreign key checks to allow truncating tables with dependencies
         await db.query("SET FOREIGN_KEY_CHECKS = 0");
 
@@ -234,10 +253,50 @@ export const resetMysqlDb = async () => {
 
         // Re-enable foreign key checks
         await db.query("SET FOREIGN_KEY_CHECKS = 1");
-        
+
         console.log('MySQL database reset successfully');
     } catch (error) {
         console.error('Error resetting MySQL database: ' + error.message);
+        throw error;
+    }
+}
+
+/**
+ * Reset all MySQL tables (truncate all tables, keeps structure)
+ */
+export const resetAllMysqlTables = async () => {
+    if (!db) {
+        throw new Error('Database connection not initialized');
+    }
+
+    if (config.environment !== 'test' && config.environment !== 'development') {
+        throw new Error('Cannot reset MySQL database outside of test or development mode!');
+    }
+
+    try {
+        // Get all table names
+        const [tables] = await db.query("SHOW TABLES");
+
+        if (!tables.length) {
+            console.log('No tables found to reset.');
+            return;
+        }
+
+        // Disable foreign key checks to avoid errors
+        await db.query("SET FOREIGN_KEY_CHECKS = 0");
+
+        // Truncate each table
+        for (const row of tables) {
+            const tableName = Object.values(row)[0];
+            await db.query(`TRUNCATE TABLE \`${tableName}\``);
+        }
+
+        // Re-enable foreign key checks
+        await db.query("SET FOREIGN_KEY_CHECKS = 1");
+
+        loggerService.info('All MySQL tables reset successfully');
+    } catch (error) {
+        loggerService.error('Error resetting MySQL tables: ' + error.message);
         throw error;
     }
 }

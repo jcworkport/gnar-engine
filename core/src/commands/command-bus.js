@@ -70,7 +70,8 @@ export const commandBus = {
             }
 
             // Execute via websocket synchronously
-            return await wsManager.send(serviceName, fullCommandName, payload);
+            const wsResult = await wsManager.send(serviceName, fullCommandName, payload);
+            return wsResult;
         }
     }
 }

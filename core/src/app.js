@@ -3,7 +3,7 @@ import { messageController } from './controllers/message.controller.js';
 import { commandBus } from './commands/command-bus.js';
 import { runSeeders, internalHealthCheck } from './commands/handlers/control.handler.js';
 import { BadRequestError, initErrorResponses, NotFoundError, UnauthorisedError, FailedHealthCheckError } from './errors/errors.js';
-import { initDbConnection, checkConnection } from './db/db.js';
+import { initDbConnection, checkConnection, dropDatabaseData } from './db/db.js';
 import { sqlHelpers } from './db/helpers.js';
 import { migrations } from './services/migration.service.js';
 import { seeders } from './services/seeder.service.js';
@@ -86,8 +86,10 @@ const GnarEngine = {
         GnarEngine.webSockets = wsManager;
 
 		// Register core handlers
-		GnarEngine.commands.register(`${config.serviceName}.runSeeders`, runSeeders);
+        GnarEngine.commands.register(`${config.serviceName}.runMigrations`, async () => await migrations.runMigrations({ config }));
+		GnarEngine.commands.register(`${config.serviceName}.runSeeders`, async ({ seeder }) => await seeders.runSeeders({ config, seeder }));
 		GnarEngine.commands.register(`${config.serviceName}.internalHealthCheck`, internalHealthCheck);
+        GnarEngine.commands.register(`${config.serviceName}.dropDatabaseData`, dropDatabaseData);
 
 		// Schema
 		GnarEngine.schema = schemaService;

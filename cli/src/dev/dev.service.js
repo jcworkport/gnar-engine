@@ -288,7 +288,9 @@ async function buildAndUpContainers({
 
             if (secrets.services?.[svc.name]) {
                 secrets.services[svc.name].NODE_ENV = 'test';
+            }
 
+            if (secrets.services?.[svc.name]) {
                 if (testService && svc.name === testService) {
                     secrets.services[svc.name].RUN_TESTS = 'true';
                 }
@@ -481,6 +483,9 @@ async function buildAndUpContainers({
                 continue;
             }
 
+            const binds = [];
+            binds.push(`${gnarHiddenDir}/data/${host}-data:/var/lib/mysql`)
+
             const mysqlContainerName = `ge-${config.environment}-${config.namespace}-${host}`;
             services[mysqlContainerName] = await createContainer({
                 name: `ge-${config.environment}-${config.namespace}-${host}`,
@@ -492,9 +497,7 @@ async function buildAndUpContainers({
                 ports: {
                     [mysqlPortsCounter]: mysqlPortsCounter
                 },
-                binds: [
-                    `${gnarHiddenDir}/data/${host}-data:/var/lib/mysql`
-                ],
+                binds: binds,
                 restart: 'always',
                 attach: attachAll,
                 network: networkName,
@@ -512,6 +515,9 @@ async function buildAndUpContainers({
                 continue;
             }
 
+            const binds = [];
+            binds.push(`${gnarHiddenDir}/data/${host}-data:/data/db`);
+
             const mongoContainerName = `ge-${config.environment}-${config.namespace}-${host}`;
             services[mongoContainerName] = await createContainer({
                 name: `ge-${config.environment}-${config.namespace}-${host}`,
@@ -523,10 +529,7 @@ async function buildAndUpContainers({
                 ports: {
                     [mongoPortsCounter]: 27017
                 },
-                binds: [
-                    `${gnarHiddenDir}/data/${host}-data:/data/db`,
-                    //'./mongo-init-scripts:/docker-entrypoint-initdb.d'
-                ],
+                binds: binds,
                 restart: 'always',
                 attach: attachAll,
                 network: networkName,
