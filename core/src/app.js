@@ -96,6 +96,12 @@ const GnarEngine = {
 
 		// Logger
 		GnarEngine.logger = loggerService;
+        GnarEngine.logger.init({
+            cloudProjectId: config.cloud?.projectId || '',
+            serviceName: config.serviceName,
+            flushIntervalMs: config.cloud?.logger.flushIntervalMs || 5000,
+            transports: config.cloud?.logger || []
+        });
 
 		// Errors
 		GnarEngine.error = {
