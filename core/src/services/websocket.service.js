@@ -72,7 +72,7 @@ export const wsManager = {
             try {
                 await Promise.all(connectionPromises);
             } catch (err) {
-                loggerService.error('Failed to connect to some services', err);
+                //loggerService.error('Failed to connect to some services', err);
             }
         },
 
