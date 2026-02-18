@@ -142,7 +142,7 @@ export const wsManager = {
             });
 
             ws.on('error', err => {
-                loggerService.error(`Failed to connect to peer ${serviceName} at ${url}`, err);
+                //loggerService.error(`Failed to connect to peer ${serviceName} at ${url}`, err);
                 reject(err);
             });
         });
