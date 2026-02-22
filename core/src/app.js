@@ -40,8 +40,8 @@ const GnarEngine = {
         GnarEngine.config = config;
 
 		// Initialise http server
-		GnarEngine.http = httpController;
-        if (config.http) {
+        if (config.http && config.http.allowedMethods) {
+            GnarEngine.http = httpController;
             await GnarEngine.http.init(config.http);
         }
 
@@ -50,32 +50,42 @@ const GnarEngine = {
         GnarEngine.commands.init(config);
 
 		// Connect to database
-		try { 
-			GnarEngine.db = await initDbConnection(config.db);
-		} catch (err) {
-			loggerService.error('Error connecting to database: ' + err);
-			process.exit(1);
-		}
+        if (config.db && config.db.type) {
+            try { 
+                GnarEngine.db = await initDbConnection(config.db);
+            } catch (err) {
+                loggerService.error('Error connecting to database: ' + err);
+                process.exit(1);
+            }
+        }
 
-		// Db utilities
-		GnarEngine.db.checkConnection = checkConnection;
-		GnarEngine.db.migrations = migrations;
-		GnarEngine.db.seeders = seeders;
+        // Db utilities
+        if (!GnarEngine.db) {
+            GnarEngine.db = {};
+        }
+
+        GnarEngine.db.checkConnection = checkConnection;
+        GnarEngine.db.migrations = migrations;
+        GnarEngine.db.seeders = seeders;
 
         sqlHelpers.init(GnarEngine.db);
         GnarEngine.db.sql = {};
         GnarEngine.db.sql.helpers = sqlHelpers;
 
 		// On ready
-		GnarEngine.http.addHook('onReady', async () => {
-			// Internal health check
-			setInterval(() => {
-				commandBus.execute('internalHealthCheck', {});
-			}, 60000);
-		});
+        if (GnarEngine.http) {
+            GnarEngine.http.addHook('onReady', async () => {
+                // Internal health check
+                setInterval(() => {
+                    commandBus.execute('internalHealthCheck', {});
+                }, 60000);
+            });
+        }
 
 		// Initialise errors
-		initErrorResponses(GnarEngine.http);
+        if (GnarEngine.http) {
+		    initErrorResponses(GnarEngine.http);
+        }
 
 		// Initialise message client
         setRabbitConnectionUrl(config.message?.url || '');
@@ -119,31 +129,33 @@ const GnarEngine = {
 		}
 
 		// Global pre-handlers
-		GnarEngine.http.addHook('onRequest', async (request, reply) => {
-		    const { url, method } = request;
+        if (GnarEngine.http) {
+            GnarEngine.http.addHook('onRequest', async (request, reply) => {
+                const { url, method } = request;
 
-			// Append trailing slash internally (no redirect)
-			if (!url.endsWith('/') && !url.includes('.') && url !== '/') {
-				const parsedUrl = new URL(request.raw.url, `http://${request.headers.host}`);
-				parsedUrl.pathname += '/';
-				request.raw.url = parsedUrl.pathname + (parsedUrl.search || '');
-			}
-
-            // set authenticated user
-			const authHeader = request.raw.headers.authorization || '';
-			const token = authHeader ? authHeader.split(' ')[1] : '';
-		
-			if (token) {
-				// get authenticated user from authentication service
-				const userResult = await GnarEngine.commands.execute('userService.getAuthenticatedUser', {
-					token: token
-				})
-
-                if (userResult) {
-				    request.user = userResult;
+                // Append trailing slash internally (no redirect)
+                if (!url.endsWith('/') && !url.includes('.') && url !== '/') {
+                    const parsedUrl = new URL(request.raw.url, `http://${request.headers.host}`);
+                    parsedUrl.pathname += '/';
+                    request.raw.url = parsedUrl.pathname + (parsedUrl.search || '');
                 }
-			}
-		});
+
+                // set authenticated user
+                const authHeader = request.raw.headers.authorization || '';
+                const token = authHeader ? authHeader.split(' ')[1] : '';
+            
+                if (token) {
+                    // get authenticated user from authentication service
+                    const userResult = await GnarEngine.commands.execute('userService.getAuthenticatedUser', {
+                        token: token
+                    })
+
+                    if (userResult) {
+                        request.user = userResult;
+                    }
+                }
+            });
+        }
 
 		GnarEngine.registerService = async () => {
 			if (config.serviceName !== 'controlService') {
@@ -181,6 +193,11 @@ const GnarEngine = {
         
         // Rabbit
         GnarEngine.rabbit = rabbitService;
+
+        // Export empty objects for unitialised services to avoid errors
+        if (!GnarEngine.http) {
+            GnarEngine.http = {};
+        }
 	}
 }
 
