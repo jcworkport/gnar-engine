@@ -15,7 +15,7 @@ import schemaService from './services/schema.service.js';
 import { testService } from './services/test.service.js';
 import { storageService } from './services/storage.service.js';
 import { manifest } from './commands/command-manifest.js';
-import { rabbit } from './services/rabbit.js';
+import { rabbit as rabbitService } from './services/rabbit.js';
 import { v4 as uuidv4 } from 'uuid';
 import { v5 as uuidv5 } from 'uuid';
 
@@ -180,7 +180,7 @@ const GnarEngine = {
         }
         
         // Rabbit
-        GnarEngine.rabbit = rabbit;
+        GnarEngine.rabbit = rabbitService;
 	}
 }
 
