@@ -170,3 +170,14 @@ export const reinitializeRabbitMQ = async (queueName, prefetchCount, onMessageCa
 
     return consumerTag;
 };
+
+/**
+ * Export rabbit functions
+ */
+export const rabbit = {
+    getChannel: getRabbitMQChannel,
+    getConnection: getRabbitMQConnection,
+    setConnectionUrl: setRabbitConnectionUrl,
+    initialize: initializeRabbitMQ,
+    reinitialize: reinitializeRabbitMQ
+}
