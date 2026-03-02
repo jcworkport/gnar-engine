@@ -27,24 +27,26 @@ const execAsync = promisify(exec);
  * @param {boolean} [options.bootstrapDev=false] - Whether to set the cli/src/bootstrap directory as the project directory
  * @param {boolean} [options.test=false] - Whether to run tests with ephemeral databases
  * @param {string} [options.testService=''] - The service to run tests for (only applicable if test=true)
+ * @param {string} [options.auditService=''] - The service to run audit tests for with persisted environment databases (e.g. --audit-service user)
  * @param {boolean} [options.resetDatabases=false] - Whether to drop all service databases, re-running all migrations and seeders
  * @param {string} [options.resetDatabase=''] - The service database to drop, re-running all migrations and seeders
  * @param {boolean} [options.removeOrphans=true] - Whether to remove orphaned containers
  * @param {boolean} [options.attachAll=false] - Attach all services including database and message queues for debugging
  */
 export async function up({ 
-        projectDir,
-        build = false,
-        detach = false, 
-        coreDev = false, 
-        bootstrapDev = false, 
-        test = false, 
-        testService = '', 
-        resetDatabases = false,
-        resetDatabase = '',
-        removeOrphans = true, 
-        attachAll = false
-    }) {
+    projectDir,
+    build = false,
+    detach = false, 
+    coreDev = false, 
+    bootstrapDev = false, 
+    test = false, 
+    testService = '',
+    auditService = '',
+    resetDatabases = false,
+    resetDatabase = '',
+    removeOrphans = true, 
+    attachAll = false
+}) {
 
     // bootstrap dev
     if (bootstrapDev) {
@@ -86,6 +88,7 @@ export async function up({
         bootstrapDev: bootstrapDev,
         test: test,
         testService: testService,
+        auditService: auditService,
         resetDatabases: resetDatabases,
         resetDatabase: resetDatabase,
         attachAll: attachAll,
@@ -250,24 +253,25 @@ export async function createDynamicNginxConf({ config, serviceConfDir, projectDi
  * @param {boolean} build - Whether to re-build images
  * @param {boolean} test - Whether to run tests with ephemeral databases
  * @param {string} testService - The service to run tests for (only applicable if test=true)
+ * @param {string} auditService - The service to run audit tests for with persisted environment databases (e.g. --audit-service user)
  * @param {boolean} resetDatabases - Whether to drop all service databases, re-running all migrations and seeders
- * @
  * @param {boolean} attachAll - Whether to attach to all containers' stdio (otherwise databases and message queue are detached)
  */
 async function buildAndUpContainers({ 
-        config, 
-        secrets, 
-        gnarHiddenDir, 
-        projectDir, 
-        coreDev = false, 
-        bootstrapDev = false, 
-        build = false, 
-        test = false, 
-        testService, 
-        resetDatabases = false,
-        resetDatabase = '',
-        attachAll = false 
-    }) {
+    config, 
+    secrets, 
+    gnarHiddenDir, 
+    projectDir, 
+    coreDev = false, 
+    bootstrapDev = false, 
+    build = false, 
+    test = false, 
+    testService,
+    auditService,
+    resetDatabases = false,
+    resetDatabase = '',
+    attachAll = false 
+}) {
     
     let mysqlPortsCounter = 3306;
     let mongoPortsCounter = 27017;
@@ -421,6 +425,11 @@ async function buildAndUpContainers({
                 svc.depends_on = svc.depends_on.filter(d => d !== 'db-mysql');
                 svc.depends_on.push('db-mysql-test');
             }
+        }
+
+        // audit mode
+        if (auditService && svc.name === auditService) {
+            env.[svc.name.toUpperCase() + '_RUN_AUDITS'] = true;
         }
 
         // add the core source code mount if in coreDev mode
