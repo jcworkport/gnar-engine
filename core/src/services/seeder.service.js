@@ -58,6 +58,9 @@ export const seeders = {
                         await seeders.markSeederAsRun(seederName);
                     } catch (err) {
                         loggerService.error("Error running seeder " + seederName + ": " + err);
+
+                        // Don't continue running seeders if one fails
+                        throw err;
                     }
                 } else {
                     loggerService.info("Seeder already run: " + seederName);
