@@ -8,20 +8,24 @@ import { loggerService } from "../../services/logger.service.js";
  * @param {Object} params
  * @param {string} params.seeder Name of single seeder to run (optional)
  */
-export const runSeeders = async ({seeder}) => {
+export const runSeeders = async ({ seeder }) => {
     seeders.runSeeders();
 }
 
 /**
  * Internal health check (kills process if it fails)
  */
-export const internalHealthCheck = async () => {
+export const internalHealthCheck = async ({ config }) => {
+
+    console.log('Running internal health check', config);
 
     // ensure db connection
-    try {
-        await initDbConnection();
-    } catch (err) {
-        loggerService.error('[Internal health check] Failed - Exiting. Error connecting to MongoDB: ' + err);
-        process.exit(1);
+    if (config && config.db && config.db.type) {
+        try {
+            await initDbConnection();
+        } catch (err) {
+            loggerService.error('[Internal health check] Failed - Exiting. Error connecting to MongoDB: ' + err);
+            process.exit(1);
+        }
     }
 }
