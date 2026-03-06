@@ -95,7 +95,12 @@ export const wsManager = {
 
         wss.on('connection', (ws, req) => {
             const serviceName = this.identifyPeer(req);
-            this.wsMap.set(serviceName, ws);
+            
+            if (this.wsMap.has(serviceName) && this.wsMap.get(serviceName).readyState === WebSocket.OPEN) {
+                loggerService.warn(`Duplicate inbound connection from ${serviceName}, closing`);
+                ws.close();
+                return;
+            }
 
             ws.on('message', (raw) => {
                 this.handleMessage(serviceName, raw);
