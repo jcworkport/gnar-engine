@@ -166,7 +166,6 @@ const GnarEngine = {
 							manifest: manifest.manifest
 						}
 					});
-					GnarEngine.logger.info(`Service ${config.serviceName} registered with control service.`);
 				} catch (error) {
 					GnarEngine.logger.error(`Failed to register service ${config.serviceName} with control service: ${error.message}`);
 				}

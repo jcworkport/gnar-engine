@@ -53,6 +53,12 @@ export const wsManager = {
                 services = await commandBus.execute('controlService.getServices', {});
             } catch (err) {
                 loggerService.error('Failed to get service registry. ' + err);
+
+                // try to connect to control service again
+                if (config.serviceName !== 'controlService') {
+                    loggerService.info('serviceName ' + JSON.stringify(config));
+                    await this.connect('controlService', config); 
+                }
                 return;
             }
 
@@ -184,7 +190,7 @@ export const wsManager = {
             clearTimeout(call.timeout);
 
             if (msg.error) {
-                call.reject(new Error(msg.error));
+                call.reject(new Error('RPC rejected: ' + msg.error));
             } else {
                 call.resolve(msg.response);
             }
