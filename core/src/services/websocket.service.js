@@ -21,68 +21,69 @@ export const wsManager = {
         // Start the server
         this.startServer();
 
-        // Initial connection to control service 
-        let attempt = 1;
+        // connect to peers
+        await this.connectToPeers(config);
 
-        while (true) { 
-            try { 
-                if (config.serviceName !== 'controlService') {
-                    loggerService.info('serviceName ' + JSON.stringify(config));
-                    await this.connect('controlService', config); 
-                }
-                break;
-            } catch (err) { 
-                if (attempt >= config.maxInitialConnectionAttempts) { 
-                    loggerService.error(`Initial WS connection to control service failed after ${attempt} attempts. Exiting.`);
-                    process.exit(1);
-                } else { 
-                    loggerService.error(`Initial WS connection to control service failed (attempt ${attempt}). Retrying in 3s...`); 
-                    attempt++; 
-                    await new Promise(resolve => setTimeout(resolve, 3000));
-                }
+        setInterval(async () => {
+            await this.connectToPeers(config);
+        }, config.reconnectInterval || 10000);
+    },
+
+    /**
+     * Connect to all services
+     */
+    async connectToPeers(config) {
+
+        let services = [];
+
+        // ensure we are connected to the control service
+        if (wsMap.get('controlService')?.readyState !== WebSocket.OPEN) {
+            loggerService.error('Lost connection to control service. Attempting to reconnect...');
+
+            try {
+                const ws = await this.connect('controlService', config);
+                wsMap.set('controlService', ws);
+            } catch (err) {
+                loggerService.error('Failed to reconnect to control service. Will retry again in next interval. ' + err);
+                return;
             }
         }
 
-        // poll connection to other services
-        setInterval(async () => {
+        // Get services from service registry let services = [];
+        try {
+            services = await commandBus.execute('controlService.getServices', {});
+        } catch (err) {
+            loggerService.error('Failed to get service registry. ' + err);
 
-            let services = [];
+            // try to connect to control service again
+            if (config.serviceName !== 'controlService') {
+                loggerService.info('serviceName ' + JSON.stringify(config));
+                const ws = await this.connect('controlService', config); 
+                wsMap.set('controlService', ws);
+            }
+            return;
+        }
 
-            // Get services from service registry let services = [];
-            try {
-                services = await commandBus.execute('controlService.getServices', {});
-            } catch (err) {
-                loggerService.error('Failed to get service registry. ' + err);
-
-                // try to connect to control service again
-                if (config.serviceName !== 'controlService') {
-                    loggerService.info('serviceName ' + JSON.stringify(config));
-                    await this.connect('controlService', config); 
-                }
-                return;
+        // Connect to any services not already Connected
+        const connectionPromises = services.map(service => {
+            if (service.name === config.serviceName) {
+                return Promise.resolve();
             }
 
-            // Connect to any services not already Connected
-            const connectionPromises = services.map(service => {
-                if (service.name === config.serviceName) {
-                    return Promise.resolve();
-                }
+            const existing = this.wsMap.get(service.name);
 
-                if (this.wsMap[service.name] && this.wsMap[service.name].readyState === WebSocket.OPEN) {
-                    return Promise.resolve();
-                }
-
-                return this.connect(service.name, config)
-            });
-
-            try {
-                await Promise.all(connectionPromises);
-            } catch (err) {
-                //loggerService.error('Failed to connect to some services', err);
+            if (existing && existing.readyState === WebSocket.OPEN) {
+                return Promise.resolve();
             }
-        },
 
-        config.reconnectInterval || 10000);
+            return this.connect(service.name, config)
+        });
+
+        try {
+            await Promise.all(connectionPromises);
+        } catch (err) {
+            //loggerService.error('Failed to connect to some services', err);
+        }
     },
 
     /**
@@ -95,6 +96,16 @@ export const wsManager = {
 
         wss.on('connection', (ws, req) => {
             const serviceName = this.identifyPeer(req);
+
+            // Close duplicate connections from the same service
+            const existing = this.wsMap.get(serviceName);
+
+            if (existing) {
+                ws.close();
+                return;
+            }
+
+            // Otherwise store the new connection
             this.wsMap.set(serviceName, ws);
 
             ws.on('message', (raw) => {
