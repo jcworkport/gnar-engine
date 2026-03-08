@@ -74,6 +74,13 @@ export const wsManager = {
                 if (this.wsConnections[serviceName]) {
                     delete this.wsConnections[serviceName][serviceHostname];
                 }
+
+                if (config.serviceName == 'controlService') {
+                    await commands.execute('controlService.removeServiceReplica', {
+                        serviceName: serviceName,
+                        hostname: serviceHostname
+                    });
+                }
             });
         });
     },
