@@ -25,33 +25,82 @@ export const wsManager = {
         config.hostname = hostname;
 
         // Start the server to accept inbound connections
-        this.startServer();
+        this.startServer(config);
 
-        // connect to the control service
+        // connect to the control service and reconnect if connection drops
         if (config.serviceName !== 'controlService') {
-            while (!this.wsConnections?.controlService?.controlService || this.wsConnections?.controlService?.controlService?.readyState !== WebSocket.OPEN) {
-                await this.connectToControlService(config);
-                await new Promise(r => setTimeout(r, 2000));
-            }
-        }
+            let ws;
+            let peerAddresses = {};
 
-        // register with the control service & retrieve peer addresses
-        const peerAddresses = await this.registerAndGetPeers(config);
-
-        // Setup our local connection map and connect for the first time
-        if (peerAddresses.length) {
-            peerAddresses.forEach(async (peer) => {
-                // peer address can be empty if control service has allocated our service as a peer to the other service already
-                // the same connection will form from the otherside
-                if (!peer) {
-                    return;
+            // await the initial connection
+            while (!ws) {
+                try {
+                    ws = await this.connectToControlService(config);
+                } catch (err) {
+                    loggerService.error('Failed to connect to control service, retrying...', err.message);
+                    await new Promise(r => setTimeout(r, 2000));
                 }
+            }
 
-                // otherwise connect
-                this.connect({ peer, config });
-            });
+            // background reconnect loop
+            (async () => {
+                while (true) {
+                    // wait until ws closes
+                    await new Promise(resolve => ws.once('close', resolve));
 
-            logger.info(`Initial peer connections established to: `, this.wsConnections);
+                    let newWs;
+                    while (!newWs) {
+                        try {
+                            newWs = await this.connectToControlService(config);
+                        } catch (err) {
+                            loggerService.error('Failed to reconnect to control service, retrying...', err.message);
+                            await new Promise(r => setTimeout(r, 2000));
+                        }
+                    }
+
+                    ws = newWs;
+                }
+            })();
+
+            // register with control service
+            try {
+                loggerService.info('registering with', config.serviceName, config.replicaSlot, config.hostname);
+                await commandBus.execute('controlService.registerServiceAndReplica', {
+                    serviceName: config.serviceName,
+                    replicaSlot: config.replicaSlot, 
+                    replicaHostname: config.hostname
+                });
+            } catch (error) {
+                loggerService.error(`Failed to register service ${config.serviceName} with control service: ${error.message}`);
+            }
+
+            // get peers
+            try {
+                peerAddresses = await commandBus.execute('controlService.newPeerSet', {
+                    requestingHostname: config.hostname
+                });
+                loggerService.info('Peers', peerAddresses);
+                loggerService.info(`Retrieved ${Object.keys(peeraddresses).length} peers from control service`);
+            } catch (err) {
+                loggerService.error('Failed to get peer set. ' + err);
+                return {};
+            }
+
+            // Setup our local connection map and connect for the first time
+            if (peerAddress && Object.keys(peerAddresses).length > 0) {
+                Object.keys(peerAddresses).forEach(async (peer) => {
+                    // peer address can be empty if control service has allocated our service as a peer to the other service already
+                    // the same connection will form from the otherside
+                    if (!peer) {
+                        return;
+                    }
+
+                    // otherwise connect
+                    this.connect({ peer, config });
+                });
+
+                loggerService.info(`Initial peer connections established to: `, this.wsConnections);
+            }
         }
     },
 
@@ -60,7 +109,7 @@ export const wsManager = {
      *
      * @param {number} port - Port to listen on
      */
-    startServer(port = 5000) {
+    startServer(config, port = 5000) {
         const wss = new WebSocketServer({ port });
 
         wss.on('connection', (ws, req) => {
@@ -92,9 +141,9 @@ export const wsManager = {
                 }
 
                 if (config.serviceName == 'controlService') {
-                    await commands.execute('controlService.removeServiceReplica', {
+                    commandBus.execute('controlService.removeServiceReplica', {
                         serviceName: serviceName,
-                        hostname: serviceHostname
+                        replicaHostname: serviceHostname
                     });
                 }
             });
@@ -107,69 +156,54 @@ export const wsManager = {
      * @param {Object} config - Configuration object
      */
     async connectToControlService(config) {
-        try {
-            const url = `ws://controlService:5000`;
-
-            const ws = new WebSocket(url, {
-                headers: {
-                    'x-api-key': 'my-secret-key',
-                    'x-service-name': config.serviceName,
-                    'x-service-hostname': config.hostname
-                }
-            });
-
-            ws.on('open', () => {
-                loggerService.info(`Connected to control service`);
-                this.wsConnections['controlService']['controlService'] = ws;
-
-                ws.on('message', (raw) => {
-                    this.handleMessage({ peer.name, peer.hostname, ws, raw });
-                });
-            });
-
-            ws.on('close', () => {
-                loggerService.error(`Control service disconnected`);
-                delete this.wsConnections.controlService;
-            });
-
-            ws.on('error', (err) => {
-                loggerService.error(`WS error with control service: ${err.message}`);
-                delete this.wsConnections.controlService;
-            });
-        } catch (error) {
-            loggerService.error(`Error during WS connection to control service: ${error.message}`);
-        }
-    },
-
-    /**
-     * Register and get peers from control service
-     *
-     * @param {Object} config - Configuration object
-     * @return {Promise<Array>} - Resolves to an array of peer services
-     */
-    async registerAndGetPeers(config) {
-
-        if (config.serviceName !== 'controlService') {
+        return new Promise((resolve, reject) => {
             try {
-                await GnarEngine.commands.execute('controlService.registerService', {
-                    service: {
-                        name: config.serviceName,
-                        manifest: manifest.manifest
+                const url = `ws://control-service:5000`;
+
+                const ws = new WebSocket(url, {
+                    headers: {
+                        'x-api-key': 'my-secret-key',
+                        'x-service-name': config.serviceName,
+                        'x-service-hostname': config.hostname
                     }
                 });
-            } catch (error) {
-                GnarEngine.logger.error(`Failed to register service ${config.serviceName} with control service: ${error.message}`);
-            }
-        }
 
-        try {
-            const services = await commandBus.execute('controlService.getServices', {});
-            loggerService.info(`Retrieved ${services.length} services from control service`);
-            return services;
-        } catch (err) {
-            loggerService.error('Failed to get service registry. ' + err);
-            return [];
-        }
+                // Resolve when the connection opens
+                ws.on('open', () => {
+                    loggerService.info(`Connected to control service`);
+                
+                    if (!this.wsConnections['controlService']) {
+                        this.wsConnections['controlService'] = {};
+                    }
+
+                    this.wsConnections['controlService']['controlService'] = ws;
+
+                    // Handle incoming messages
+                    ws.on('message', (raw) => {
+                        this.handleMessage({ serviceName: 'controlService', hostname: 'controlService', ws, raw });
+                    });
+
+                    resolve(ws);
+                });
+
+                // Reject if the connection closes immediately
+                ws.on('close', () => {
+                    loggerService.error(`Control service disconnected`);
+                    delete this.wsConnections['controlService']?.['controlService'];
+                    reject(new Error('Control service connection closed'));
+                });
+
+                // Reject on error
+                ws.on('error', (err) => {
+                    loggerService.error(`WS error with control service: ${err.message}`);
+                    delete this.wsConnections['controlService']?.['controlService'];
+                    reject(err);
+                });
+
+            } catch (err) {
+                reject(err);
+            }
+        });
     },
 
     /**
@@ -205,7 +239,12 @@ export const wsManager = {
                 this.wsConnections[peer.name][peer.hostname] = ws;
 
                 ws.on('message', (raw) => {
-                    this.handleMessage({ peer.name, peer.hostname, ws, raw });
+                    this.handleMessage({ 
+                        serviceName: peer.name,
+                        hostname: peer.hostname, 
+                        ws: ws, 
+                        raw: raw
+                    });
                 });
             });
 
@@ -333,13 +372,14 @@ export const wsManager = {
     async send(serviceName, commandName, payload, timeoutMs = 10000) {
 
         // randomly select any replica of the peer
-        const nodes = Object.values(this.wsConnections[serviceName] || {}).filter(ws => ws);
+        const nodes = this.wsConnections[serviceName];
 
-        if (!nodes.length) {
+        if (!Object.keys(nodes) || Object.keys(nodes).length === 0) {
             throw new Error(`No replicas connected for service ${serviceName}`);
         }
 
-        let ws = nodes[Math.floor(Math.random() * nodes.length)];
+        const nodeKey = Object.keys(nodes)[Math.floor(Math.random() * Object.keys(nodes).length)];
+        let ws = nodes[nodeKey];
 
         // wait for connection if it's not ready yet
         if (!ws || ws.readyState !== WebSocket.OPEN) {
