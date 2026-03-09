@@ -22,16 +22,32 @@ export const wsManager = {
         config.serviceName = serviceName;
         config.replicaSlot = hostname.split('.')[1];
         config.replicaId = hostname.split('.')[2];
+        config.hostname = hostname;
 
         // Start the server to accept inbound connections
         this.startServer();
 
-        // connect and register with the control service & retrieve peer addresses
+        // connect to the control service
+        if (config.serviceName !== 'controlService') {
+            while (!this.wsConnections?.controlService?.controlService || this.wsConnections?.controlService?.controlService?.readyState !== WebSocket.OPEN) {
+                await this.connectToControlService(config);
+                await new Promise(r => setTimeout(r, 2000));
+            }
+        }
+
+        // register with the control service & retrieve peer addresses
         const peerAddresses = await this.registerAndGetPeers(config);
 
         // Setup our local connection map and connect for the first time
         if (peerAddresses.length) {
             peerAddresses.forEach(async (peer) => {
+                // peer address can be empty if control service has allocated our service as a peer to the other service already
+                // the same connection will form from the otherside
+                if (!peer) {
+                    return;
+                }
+
+                // otherwise connect
                 this.connect({ peer, config });
             });
 
@@ -83,6 +99,46 @@ export const wsManager = {
                 }
             });
         });
+    },
+
+    /**
+     * Connect to control service
+     *
+     * @param {Object} config - Configuration object
+     */
+    async connectToControlService(config) {
+        try {
+            const url = `ws://controlService:5000`;
+
+            const ws = new WebSocket(url, {
+                headers: {
+                    'x-api-key': 'my-secret-key',
+                    'x-service-name': config.serviceName,
+                    'x-service-hostname': config.hostname
+                }
+            });
+
+            ws.on('open', () => {
+                loggerService.info(`Connected to control service`);
+                this.wsConnections['controlService']['controlService'] = ws;
+
+                ws.on('message', (raw) => {
+                    this.handleMessage({ peer.name, peer.hostname, ws, raw });
+                });
+            });
+
+            ws.on('close', () => {
+                loggerService.error(`Control service disconnected`);
+                delete this.wsConnections.controlService;
+            });
+
+            ws.on('error', (err) => {
+                loggerService.error(`WS error with control service: ${err.message}`);
+                delete this.wsConnections.controlService;
+            });
+        } catch (error) {
+            loggerService.error(`Error during WS connection to control service: ${error.message}`);
+        }
     },
 
     /**
@@ -178,14 +234,35 @@ export const wsManager = {
      */
     async handlePeerFailure(peer, config) {
         try {
+            // don't do anything if it's the control service
+            // it's the other services responsibility to connect to the control service
+            if (config.serviceName === 'controlService') {
+                return
+            }
+
+            // only request a replacement peer if we aren't already connected to that service through another replica
+            getNewPeer = false;
+
+            if (this.wsConnections[peer.name]?.length < 1) {
+                getNewPeer = true;
+            }
+
+            // report failure to control service
             setTimeout(async () => {
-                await commandBus.execute('controlService.reportPeerConnectionFailure', {
-                    config,
-                    failedPeerAddress: peer.hostname
+                const newPeer = await commandBus.execute('controlService.peerConnectionDropped', {
+                    requestingHostname: config.hostname,
+                    requestingServicename: config.serviceName,
+                    droppedPeerHostname: peer.hostname,
+                    getNewPeer: getNewPeer
                 });
 
-                this.connect({ peer, config });
-
+                // connect to replacement peer if returned
+                if (newPeer?.hostname) {
+                    this.connect({ 
+                        peer: newPeer,
+                        config: config
+                    });
+                }
             }, 3000);
         } catch (err) {
             loggerService.error(`Failed to report peer connection failure to control service for ${peer.hostname}: ${err.message}`);
