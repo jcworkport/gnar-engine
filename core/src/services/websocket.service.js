@@ -23,6 +23,7 @@ export const wsManager = {
         config.replicaSlot = hostname.split('.')[1];
         config.replicaId = hostname.split('.')[2];
         config.hostname = hostname;
+        config.ip = (await os.networkInterfaces()['eth0'].find(i => i.family === 'IPv4')).address;
 
         // Start the server to accept inbound connections
         this.startServer(config);
@@ -64,14 +65,16 @@ export const wsManager = {
 
             // register with control service
             try {
-                loggerService.info('registering with', config.serviceName, config.replicaSlot, config.hostname);
+                loggerService.info('registering with', config.serviceName, config.replicaSlot, config.hostname, config.ip);
                 await commandBus.execute('controlService.registerServiceAndReplica', {
                     serviceName: config.serviceName,
                     replicaSlot: config.replicaSlot, 
-                    replicaHostname: config.hostname
+                    replicaHostname: config.hostname,
+                    replicaIp: config.ip
                 });
             } catch (error) {
                 loggerService.error(`Failed to register service ${config.serviceName} with control service: ${error.message}`);
+                throw error;
             }
 
             // get peers
@@ -80,26 +83,28 @@ export const wsManager = {
                     requestingHostname: config.hostname
                 });
                 loggerService.info('Peers', peerAddresses);
-                loggerService.info(`Retrieved ${Object.keys(peeraddresses).length} peers from control service`);
-            } catch (err) {
-                loggerService.error('Failed to get peer set. ' + err);
-                return {};
+            } catch (error) {
+                loggerService.error('Failed to get peer set. ' + error.message);
+                throw error;
             }
 
             // Setup our local connection map and connect for the first time
-            if (peerAddress && Object.keys(peerAddresses).length > 0) {
-                Object.keys(peerAddresses).forEach(async (peer) => {
-                    // peer address can be empty if control service has allocated our service as a peer to the other service already
-                    // the same connection will form from the otherside
-                    if (!peer) {
-                        return;
-                    }
+            if (peerAddresses && Object.keys(peerAddresses).length > 0) {
+                await Promise.all(
+                    Object.entries(peerAddresses).map(async ([serviceName, peer]) => {
 
-                    // otherwise connect
-                    this.connect({ peer, config });
-                });
+                        // peer address can be empty if control service has allocated our service
+                        // as a peer to the other service already
+                        if (!peer) {
+                            return;
+                        }
 
-                loggerService.info(`Initial peer connections established to: `, this.wsConnections);
+                        await this.connect({ peer, config });
+
+                    })
+                );
+
+                loggerService.info(`Initial peer connections established to: `, Object.keys(peerAddresses));
             }
         }
     },
@@ -224,7 +229,7 @@ export const wsManager = {
 
         // Connect
         try {
-            const url = `ws://${peer.hostname}:5000`;
+            const url = `ws://${peer.ip}:5000`;
 
             const ws = new WebSocket(url, {
                 headers: {
@@ -249,7 +254,7 @@ export const wsManager = {
             });
 
             ws.on('close', () => {
-                loggerService.warn(`Peer ${peer.name} at ${peer.hostname} disconnected`);
+                loggerService.info(`Peer ${peer.name} at ${peer.hostname} disconnected`);
                 delete this.wsConnections[peer.name][peer.hostname];
                 this.handlePeerFailure(peer, config);
             });
@@ -280,7 +285,7 @@ export const wsManager = {
             }
 
             // only request a replacement peer if we aren't already connected to that service through another replica
-            getNewPeer = false;
+            let getNewPeer = false;
 
             if (this.wsConnections[peer.name]?.length < 1) {
                 getNewPeer = true;
