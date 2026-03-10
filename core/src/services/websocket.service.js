@@ -96,6 +96,7 @@ export const wsManager = {
                         // peer address can be empty if control service has allocated our service
                         // as a peer to the other service already
                         if (!peer) {
+                            delete peerAddresses[serviceName];
                             return;
                         }
 
@@ -379,7 +380,7 @@ export const wsManager = {
         // randomly select any replica of the peer
         const nodes = this.wsConnections[serviceName];
 
-        if (!Object.keys(nodes) || Object.keys(nodes).length === 0) {
+        if (!nodes || !Object.keys(nodes) || Object.keys(nodes).length === 0) {
             throw new Error(`No replicas connected for service ${serviceName}`);
         }
 

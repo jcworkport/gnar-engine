@@ -94,15 +94,20 @@ export const initErrorResponses = (http) => {
             }
 		}
 
+        // normalise
+        if (!(error instanceof Error)) {
+            error = new Error(typeof error === 'string' ? error : JSON.stringify(error));
+        }
+
 		// Log and handle 500 errors
-		loggerService.error(error);
+		loggerService.error(error.stack || error.toString());
 
         if (reply) {
             return reply.code(500).send({
                 statusCode: 500,
                 error: 'Internal Server Error',
                 message: 'Something went wrong',
-                details: process.env.NODE_ENV === 'development' ? error.stack : '',
+                details: error?.message || error?.toString() || 'No additional error information available',
             });
         } else {
             throw new Error('Internal Server Error: ' + error.message);
