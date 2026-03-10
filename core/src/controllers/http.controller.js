@@ -8,9 +8,12 @@ let port = 3000;
 
 export const httpController = {
 
-    init: (config) => {
+    serviceName: 'Unnamed',
+
+    init: ({ config, serviceName }) => {
         http = Fastify({});
         port = config.port || 3000;
+        httpController.serviceName = serviceName || httpController.serviceName;
 
         // cors
         http.register(cors, {
@@ -35,7 +38,7 @@ export const httpController = {
             });
         });
 
-        loggerService.info('Control service registered http routes ' + http.printRoutes());
+        loggerService.info(`${httpController.serviceName} service registered http routes`  + http.printRoutes());
     },
 
     addHook: (hookName, hookFunction) => {

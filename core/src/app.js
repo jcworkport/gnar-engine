@@ -42,7 +42,10 @@ const GnarEngine = {
 		// Initialise http server
         if (config.http && config.http.allowedMethods) {
             GnarEngine.http = httpController;
-            await GnarEngine.http.init(config.http);
+            await GnarEngine.http.init({ 
+                config: config.http, 
+                serviceName: config.serviceName 
+            });
         }
 
 		// Initialise command bus
@@ -77,7 +80,7 @@ const GnarEngine = {
             GnarEngine.http.addHook('onReady', async () => {
                 // Internal health check
                 setInterval(() => {
-                    commandBus.execute('internalHealthCheck', {});
+                    commandBus.execute('internalHealthCheck', { config });
                 }, 60000);
             });
         }
@@ -99,7 +102,7 @@ const GnarEngine = {
 		// Register core handlers
         GnarEngine.commands.register(`${config.serviceName}.runMigrations`, async () => await migrations.runMigrations({ config }));
 		GnarEngine.commands.register(`${config.serviceName}.runSeeders`, async ({ seeder }) => await seeders.runSeeders({ config, seeder }));
-		GnarEngine.commands.register(`${config.serviceName}.internalHealthCheck`, internalHealthCheck);
+		GnarEngine.commands.register(`${config.serviceName}.internalHealthCheck`, async () => await internalHealthCheck({ config }));
         GnarEngine.commands.register(`${config.serviceName}.dropDatabaseData`, dropDatabaseData);
 
 		// Schema
