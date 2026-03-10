@@ -2,87 +2,112 @@ import WebSocket, { WebSocketServer } from 'ws';
 import { loggerService } from '../services/logger.service.js';
 import { commandBus } from '../commands/command-bus.js';
 import { v4 as uuidv4 } from 'uuid';
+import os from 'os';
 
 /**
  * P2P WebSocket Manager
  */
 export const wsManager = {
 
-    // serviceName -> WebSocketresetDatabase
-    wsMap: new Map(),
+    // websocket map: { [serviceName]: { [hostname]: WebSocket } }
+    wsConnections: {},
 
     // { messageId, resolve, reject, timeout }
     pendingCalls: [],
 
     async init(config, serviceName) {
-        
+
+        const hostname = os.hostname();
+
         config.serviceName = serviceName;
+        config.replicaSlot = hostname.split('.')[1];
+        config.replicaId = hostname.split('.')[2];
+        config.hostname = hostname;
+        config.ip = (await os.networkInterfaces()['eth0'].find(i => i.family === 'IPv4')).address;
 
-        // Start the server
-        this.startServer();
+        // Start the server to accept inbound connections
+        this.startServer(config);
 
-        // Initial connection to control service 
-        let attempt = 1;
+        // connect to the control service and reconnect if connection drops
+        if (config.serviceName !== 'controlService') {
+            let ws;
+            let peerAddresses = {};
 
-        while (true) { 
-            try { 
-                if (config.serviceName !== 'controlService') {
-                    loggerService.info('serviceName ' + JSON.stringify(config));
-                    await this.connect('controlService', config); 
+            // await the initial connection
+            while (!ws) {
+                try {
+                    ws = await this.connectToControlService(config);
+                } catch (err) {
+                    loggerService.error('Failed to connect to control service, retrying...', err.message);
+                    await new Promise(r => setTimeout(r, 2000));
                 }
-                break;
-            } catch (err) { 
-                if (attempt >= config.maxInitialConnectionAttempts) { 
-                    loggerService.error(`Initial WS connection to control service failed after ${attempt} attempts. Exiting.`);
-                    process.exit(1);
-                } else { 
-                    loggerService.error(`Initial WS connection to control service failed (attempt ${attempt}). Retrying in 3s...`); 
-                    attempt++; 
-                    await new Promise(resolve => setTimeout(resolve, 3000));
+            }
+
+            // background reconnect loop
+            (async () => {
+                while (true) {
+                    // wait until ws closes
+                    await new Promise(resolve => ws.once('close', resolve));
+
+                    let newWs;
+                    while (!newWs) {
+                        try {
+                            newWs = await this.connectToControlService(config);
+                        } catch (err) {
+                            loggerService.error('Failed to reconnect to control service, retrying...', err.message);
+                            await new Promise(r => setTimeout(r, 2000));
+                        }
+                    }
+
+                    ws = newWs;
                 }
+            })();
+
+            // register with control service
+            try {
+                loggerService.info('registering with', config.serviceName, config.replicaSlot, config.hostname, config.ip);
+                await commandBus.execute('controlService.registerServiceAndReplica', {
+                    serviceName: config.serviceName,
+                    replicaSlot: config.replicaSlot, 
+                    replicaHostname: config.hostname,
+                    replicaIp: config.ip
+                });
+            } catch (error) {
+                loggerService.error(`Failed to register service ${config.serviceName} with control service: ${error.message}`);
+                throw error;
+            }
+
+            // get peers
+            try {
+                peerAddresses = await commandBus.execute('controlService.newPeerSet', {
+                    requestingHostname: config.hostname
+                });
+                loggerService.info('Peers', peerAddresses);
+            } catch (error) {
+                loggerService.error('Failed to get peer set. ' + error.message);
+                throw error;
+            }
+
+            // Setup our local connection map and connect for the first time
+            if (peerAddresses && Object.keys(peerAddresses).length > 0) {
+                await Promise.all(
+                    Object.entries(peerAddresses).map(async ([serviceName, peer]) => {
+
+                        // peer address can be empty if control service has allocated our service
+                        // as a peer to the other service already
+                        if (!peer) {
+                            delete peerAddresses[serviceName];
+                            return;
+                        }
+
+                        await this.connect({ peer, config });
+
+                    })
+                );
+
+                loggerService.info(`Initial peer connections established to: `, Object.keys(peerAddresses));
             }
         }
-
-        // poll connection to other services
-        setInterval(async () => {
-
-            let services = [];
-
-            // Get services from service registry let services = [];
-            try {
-                services = await commandBus.execute('controlService.getServices', {});
-            } catch (err) {
-                loggerService.error('Failed to get service registry. ' + err);
-
-                // try to connect to control service again
-                if (config.serviceName !== 'controlService') {
-                    loggerService.info('serviceName ' + JSON.stringify(config));
-                    await this.connect('controlService', config); 
-                }
-                return;
-            }
-
-            // Connect to any services not already Connected
-            const connectionPromises = services.map(service => {
-                if (service.name === config.serviceName) {
-                    return Promise.resolve();
-                }
-
-                if (this.wsMap[service.name] && this.wsMap[service.name].readyState === WebSocket.OPEN) {
-                    return Promise.resolve();
-                }
-
-                return this.connect(service.name, config)
-            });
-
-            try {
-                await Promise.all(connectionPromises);
-            } catch (err) {
-                //loggerService.error('Failed to connect to some services', err);
-            }
-        },
-
-        config.reconnectInterval || 10000);
     },
 
     /**
@@ -90,77 +115,214 @@ export const wsManager = {
      *
      * @param {number} port - Port to listen on
      */
-    startServer(port = 5000) {
+    startServer(config, port = 5000) {
         const wss = new WebSocketServer({ port });
 
         wss.on('connection', (ws, req) => {
-            const serviceName = this.identifyPeer(req);
-            this.wsMap.set(serviceName, ws);
+            const { serviceName, serviceHostname } = this.identifyPeer(req);
+
+            // Otherwise store the new connection
+            if (!this.wsConnections[serviceName]) {
+                this.wsConnections[serviceName] = {};
+            }
+
+            this.wsConnections[serviceName][serviceHostname] = ws;
+
+            loggerService.info(`Peer connected (inbound): ${serviceName} (${serviceHostname})`);
 
             ws.on('message', (raw) => {
-                this.handleMessage(serviceName, raw);
+                this.handleMessage({ 
+                    serviceName: serviceName,
+                    hostname: serviceHostname,
+                    ws: ws,
+                    raw: raw,
+                });
             });
 
             ws.on('close', () => {
                 loggerService.info(`Peer disconnected: ${serviceName}`);
-                this.wsMap.delete(serviceName);
+
+                if (this.wsConnections[serviceName]) {
+                    delete this.wsConnections[serviceName][serviceHostname];
+                }
+
+                if (config.serviceName == 'controlService') {
+                    commandBus.execute('controlService.removeServiceReplica', {
+                        serviceName: serviceName,
+                        replicaHostname: serviceHostname
+                    });
+                }
             });
         });
     },
 
     /**
-     * Connect to a peer (outbound)
+     * Connect to control service
      *
-     * @param {string} serviceName - Unique name of the peer service
      * @param {Object} config - Configuration object
-     * @returns {Promise<WebSocket>} - Resolves to the connected WebSocket
      */
-    async connect(serviceName, config) {
-        const serviceHostname = serviceName.replace('Service', '-service').toLowerCase();
-        const url = `ws://${serviceHostname}:5000`;
+    async connectToControlService(config) {
+        return new Promise((resolve, reject) => {
+            try {
+                const url = `ws://control-service:5000`;
 
-        // check to ensure we don't already have a connection
-        if (this.wsMap.has(serviceName) && this.wsMap.get(serviceName).readyState === WebSocket.OPEN) {
-            return this.wsMap.get(serviceName);
+                const ws = new WebSocket(url, {
+                    headers: {
+                        'x-api-key': 'my-secret-key',
+                        'x-service-name': config.serviceName,
+                        'x-service-hostname': config.hostname
+                    }
+                });
+
+                // Resolve when the connection opens
+                ws.on('open', () => {
+                    loggerService.info(`Connected to control service`);
+                
+                    if (!this.wsConnections['controlService']) {
+                        this.wsConnections['controlService'] = {};
+                    }
+
+                    this.wsConnections['controlService']['controlService'] = ws;
+
+                    // Handle incoming messages
+                    ws.on('message', (raw) => {
+                        this.handleMessage({ serviceName: 'controlService', hostname: 'controlService', ws, raw });
+                    });
+
+                    resolve(ws);
+                });
+
+                // Reject if the connection closes immediately
+                ws.on('close', () => {
+                    loggerService.error(`Control service disconnected`);
+                    delete this.wsConnections['controlService']?.['controlService'];
+                    reject(new Error('Control service connection closed'));
+                });
+
+                // Reject on error
+                ws.on('error', (err) => {
+                    loggerService.error(`WS error with control service: ${err.message}`);
+                    delete this.wsConnections['controlService']?.['controlService'];
+                    reject(err);
+                });
+
+            } catch (err) {
+                reject(err);
+            }
+        });
+    },
+
+    /**
+     * Connect to peer
+     */
+    async connect({ peer, config }) {
+
+        // Ensure we don't connect to ourselves or the control service again
+        if (peer.name == config.serviceName || peer.name === 'controlService') {
+            return;
         }
 
-        return new Promise((resolve, reject) => {
+        if (!this.wsConnections[peer.name]) {
+            this.wsConnections[peer.name] = {};
+        }
+
+        this.wsConnections[peer.name][peer.hostname] = null;
+
+        // Connect
+        try {
+            const url = `ws://${peer.ip}:5000`;
+
             const ws = new WebSocket(url, {
                 headers: {
                     'x-api-key': 'my-secret-key',
-                    'x-service-name': config.serviceName
+                    'x-service-name': config.serviceName,
+                    'x-service-hostname': config.hostname
                 }
             });
 
             ws.on('open', () => {
-                loggerService.info(`Connected to peer ${serviceName} at ${url}`);
-                this.wsMap.set(serviceName, ws);
+                loggerService.info(`Connected to peer ${peer.hostname} at ${url}`);
+                this.wsConnections[peer.name][peer.hostname] = ws;
 
                 ws.on('message', (raw) => {
-                    this.handleMessage(serviceName, raw);
+                    this.handleMessage({ 
+                        serviceName: peer.name,
+                        hostname: peer.hostname, 
+                        ws: ws, 
+                        raw: raw
+                    });
                 });
-
-                ws.on('close', () => {
-                    loggerService.info(`Peer disconnected: ${serviceName}`);
-                    this.wsMap.delete(serviceName);
-                });
-                resolve(ws);
             });
 
-            ws.on('error', err => {
-                //loggerService.error(`Failed to connect to peer ${serviceName} at ${url}`, err);
-                reject(err);
+            ws.on('close', () => {
+                loggerService.info(`Peer ${peer.name} at ${peer.hostname} disconnected`);
+                delete this.wsConnections[peer.name][peer.hostname];
+                this.handlePeerFailure(peer, config);
             });
-        });
+
+            ws.on('error', (err) => {
+                loggerService.error(`WS error with ${peer.hostname}: ${err.message}`);
+                delete this.wsConnections[peer.name][peer.hostname];
+                this.handlePeerFailure(peer, config);
+            });
+
+        } catch (error) {
+            loggerService.error(`Error during WS connection to ${peer.hostname}: ${error.message}`);
+        }
+    },
+
+    /**
+     * Handle peer failure by notifying control service and attempting to reconnect
+     *
+     * @param {Object} peer - The peer that failed
+     * @param {Object} config - The local service configuration
+     */
+    async handlePeerFailure(peer, config) {
+        try {
+            // don't do anything if it's the control service
+            // it's the other services responsibility to connect to the control service
+            if (config.serviceName === 'controlService') {
+                return
+            }
+
+            // only request a replacement peer if we aren't already connected to that service through another replica
+            let getNewPeer = false;
+
+            if (this.wsConnections[peer.name]?.length < 1) {
+                getNewPeer = true;
+            }
+
+            // report failure to control service
+            setTimeout(async () => {
+                const newPeer = await commandBus.execute('controlService.peerConnectionDropped', {
+                    requestingHostname: config.hostname,
+                    requestingServicename: config.serviceName,
+                    droppedPeerHostname: peer.hostname,
+                    getNewPeer: getNewPeer
+                });
+
+                // connect to replacement peer if returned
+                if (newPeer?.hostname) {
+                    this.connect({ 
+                        peer: newPeer,
+                        config: config
+                    });
+                }
+            }, 3000);
+        } catch (err) {
+            loggerService.error(`Failed to report peer connection failure to control service for ${peer.hostname}: ${err.message}`);
+        }
     },
 
     /**
      * Handle inbound message
      *
      * @param {string} serviceName - Name of the peer service
+     * @param {string} hostname - Hostname of the peer service
+     * @param {WebSocket} ws - WebSocket connection to the peer
      * @param {string} raw - Raw message data
      */
-    async handleMessage(serviceName, raw) {
+    async handleMessage({ serviceName, hostname, ws, raw }) {
         let msg;
         try {
             msg = JSON.parse(raw);
@@ -173,9 +335,17 @@ export const wsManager = {
         if (msg.type === 'request' && msg.commandName) {
             try {
                 const result = await commandBus.execute(msg.commandName, msg.payload);
-                this.sendResponse(serviceName, msg.messageId, result);
+                this.sendResponse({ 
+                    ws: ws,
+                    messageId: msg.messageId,
+                    response: result
+                });
             } catch (err) {
-                this.sendResponse(serviceName, msg.messageId, null, err.message);
+                this.sendResponse({
+                    ws: ws,
+                    messageId: msg.messageId,
+                    error: err.message
+                });
             }
         }
 
@@ -206,11 +376,20 @@ export const wsManager = {
      * Send a request and wait for response
      */
     async send(serviceName, commandName, payload, timeoutMs = 10000) {
-        let ws = this.wsMap.get(serviceName);
 
+        // randomly select any replica of the peer
+        const nodes = this.wsConnections[serviceName];
+
+        if (!nodes || !Object.keys(nodes) || Object.keys(nodes).length === 0) {
+            throw new Error(`No replicas connected for service ${serviceName}`);
+        }
+
+        const nodeKey = Object.keys(nodes)[Math.floor(Math.random() * Object.keys(nodes).length)];
+        let ws = nodes[nodeKey];
+
+        // wait for connection if it's not ready yet
         if (!ws || ws.readyState !== WebSocket.OPEN) {
-            // poll until connected
-            ws = await this.waitForWsReady(serviceName);
+            ws = await this.waitForWsReady({ ws, serviceName });
         }
 
         if (!ws || ws.readyState !== WebSocket.OPEN) {
@@ -219,7 +398,7 @@ export const wsManager = {
 
         const messageId = uuidv4();
         const msg = { type: 'request', messageId, commandName, payload };
-        
+
         ws.send(JSON.stringify(msg));
 
         return new Promise((resolve, reject) => {
@@ -236,8 +415,7 @@ export const wsManager = {
     /**
      * Send a response to a peer
      */
-    sendResponse(serviceName, messageId, response = null, error = null) {
-        const ws = this.wsMap.get(serviceName);
+    sendResponse({ ws, messageId, response = null, error = null }) {
 
         if (!ws || ws.readyState !== WebSocket.OPEN) {
             return;
@@ -250,14 +428,15 @@ export const wsManager = {
      * Identify peer from connection request
      */
     identifyPeer(req) {
-        return req.headers['x-service-name'] || `unknown-${Date.now()}`;
+        return {
+            serviceHostname: req.headers['x-service-hostname'] || `unknown-${Date.now()}`,
+            serviceName: req.headers['x-service-name'] || `unknown-${Date.now()}`
+        };
     },
 
-
-    async waitForWsReady(serviceName, waitInterval = 50, maxWait = 5000) {
+    async waitForWsReady({ ws, serviceName, waitInterval = 50, maxWait = 5000 }) {
         const start = Date.now();
         while (true) {
-            const ws = this.wsMap.get(serviceName);
             if (ws && ws.readyState === WebSocket.OPEN) {
                 return ws;
             }
@@ -269,6 +448,5 @@ export const wsManager = {
             await new Promise(r => setTimeout(r, waitInterval));
         }
     }
-
 };
 
