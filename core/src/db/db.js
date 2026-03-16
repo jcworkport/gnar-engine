@@ -117,6 +117,15 @@ const initMysqlConnection = async ({ host, user, password, database, connectionL
                 queueLimit: queueLimit
             });
 
+            // Manual keep alives every 1 minute
+            setInterval(async () => {
+                try {
+                    await db.query('SELECT 1');
+                } catch (error) {
+                    loggerService.error('MySQL keep-alive query failed: ' + error.message);
+                }
+            }, 60000);
+
             loggerService.info('MySQL pool established successfully');
             return db;
 
