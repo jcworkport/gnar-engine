@@ -53,12 +53,15 @@ export const wsManager = {
                     while (!newWs) {
                         try {
                             newWs = await this.connectToControlService(config);
-                            await commandBus.execute('controlService.registerServiceAndReplica', {
-                                serviceName: config.serviceName,
-                                replicaSlot: config.replicaSlot, 
-                                replicaHostname: config.hostname,
-                                replicaIp: config.ip
-                            });
+
+                            setTimeout(async () => {
+                                await commandBus.execute('controlService.registerServiceAndReplica', {
+                                    serviceName: config.serviceName,
+                                    replicaSlot: config.replicaSlot, 
+                                    replicaHostname: config.hostname,
+                                    replicaIp: config.ip
+                                });
+                            }, 1000);
                         } catch (err) {
                             loggerService.error('Failed to reconnect to control service, retrying...', err.message);
                             await new Promise(r => setTimeout(r, 2000));
@@ -99,17 +102,59 @@ export const wsManager = {
                 await Promise.all(
                     Object.entries(peerAddresses).map(async ([serviceName, peer]) => {
 
-                        // peer address can be empty if control service has allocated our service
-                        // as a peer to the other service already
-                        if (!peer) {
-                            delete peerAddresses[serviceName];
+                        // peer address can be empty if the control service doesn't have a replica for it ready yet
+                        if (!peer || peer?.serviceName === config.serviceName) {
                             return;
                         }
 
                         await this.connect({ peer, config });
-
                     })
                 );
+
+                // get more peers in the event we are missing some from the initial start up
+                let haveAllPeers = false;
+
+                while (!haveAllPeers) {
+                    // Wait 1 second before trying
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+
+                    loggerService.info('Checking for missing peer connections...');
+
+                    for (const [serviceName, peer] of Object.entries(peerAddresses)) {
+                        if (peer.hostname || serviceName == config.serviceName || (this.wsConnections[serviceName] && Object.keys(this.wsConnections[serviceName]).length > 0)) {
+                            continue;
+                        }
+
+                        try {
+                            loggerService.info('Missing ' + serviceName + ' peer connection - requesting new peer from control service.', serviceName + ' / ', config.serviceName);
+                            const newPeer = await commandBus.execute('controlService.newPeerForService', {
+                                requestingHostname: config.hostname,
+                                serviceName: serviceName
+                            });
+
+                            peerAddresses[serviceName] = newPeer;
+
+                            await this.connect({ peer: newPeer, config });
+                        } catch (err) {
+                            loggerService.error(`Failed to get and connect to new peer for ${serviceName}: ${err.message}`);
+                        }
+                    }
+
+                    // Check if we now have all peers
+                    const checkedAllPeers = Object.entries(peerAddresses).every(([serviceName, peer]) => {
+                        if (peer.hostname || serviceName == config.serviceName || (this.wsConnections[serviceName] && Object.keys(this.wsConnections[serviceName]).length > 0)) {
+                            return true;
+                        } else {
+                            loggerService.info(`Still missing peer connection for ${serviceName}, due to ${peer}`);
+                        }
+                    });
+
+                    if (checkedAllPeers) {
+                        haveAllPeers = true;
+                        break;
+                    }
+
+                }
 
                 loggerService.info(`Initial peer connections established to: `, Object.keys(peerAddresses));
             }
