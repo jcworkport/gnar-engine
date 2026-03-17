@@ -53,6 +53,12 @@ export const wsManager = {
                     while (!newWs) {
                         try {
                             newWs = await this.connectToControlService(config);
+                            await commandBus.execute('controlService.registerServiceAndReplica', {
+                                serviceName: config.serviceName,
+                                replicaSlot: config.replicaSlot, 
+                                replicaHostname: config.hostname,
+                                replicaIp: config.ip
+                            });
                         } catch (err) {
                             loggerService.error('Failed to reconnect to control service, retrying...', err.message);
                             await new Promise(r => setTimeout(r, 2000));

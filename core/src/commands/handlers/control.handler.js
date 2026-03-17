@@ -17,8 +17,6 @@ export const runSeeders = async ({ seeder }) => {
  */
 export const internalHealthCheck = async ({ config }) => {
 
-    console.log('Running internal health check', config);
-
     // ensure db connection
     if (config && config.db && config.db.type) {
         try {
