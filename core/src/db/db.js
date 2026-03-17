@@ -123,6 +123,8 @@ const initMysqlConnection = async ({ host, user, password, database, connectionL
                     await db.query('SELECT 1');
                 } catch (error) {
                     loggerService.error('MySQL keep-alive query failed: ' + error.message);
+                    db = null;
+                    retries = 0;
                 }
             }, 60000);
 
