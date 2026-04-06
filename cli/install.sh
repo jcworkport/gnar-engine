@@ -28,5 +28,12 @@ if [ -f "$HOME/.zshrc" ] && ! grep -q "$BIN_PATH" "$HOME/.zshrc"; then
   echo "Added $BIN_PATH to PATH in ~/.zshrc"
 fi
 
+# Create config.json if it doesn't exist
+CONFIG_PATH="$TARGET_DIR/config.json"
+if [ ! -f "$CONFIG_PATH" ]; then
+  echo "{}" > "$CONFIG_PATH"
+  echo "Created config.json in $TARGET_DIR"
+fi
+
 echo "G n a r  E n g i n e - Installation complete! Please restart your terminal and run 'gnar --help' to verify."
 
