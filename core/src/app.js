@@ -128,8 +128,23 @@ const GnarEngine = {
 		// Utils
 		GnarEngine.utils = {
 			uuid: () => uuidv4(),
-			hash: (term, hashNameSpace) => uuidv5(term, hashNameSpace)
-		}
+            hash: async (password) => {
+                return await bcrypt.hash(password, 10);
+            },
+            verifyHash: async (term, hash, hashNameSpace = '') => {
+                // use bcrypt
+                if (await bcrypt.compare(password, hash)) {
+                    return true;
+                }
+                // backwards compat for uuidv5 hashes
+                else if (uuidv5(term, hashNameSpace)) {
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            }
+        }
 
 		// Global pre-handlers
         if (GnarEngine.http) {
