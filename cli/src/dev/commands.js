@@ -15,6 +15,7 @@ export function registerDevCommands(program) {
         .option('-a, --attach-all', 'Attach all services including database and message queues for debugging')
         .option('-t --test', 'Run all tests with ephemeral databases *NOT IMPLEMENTED')
         .option('--test-service <service>', 'Run the tests for the specified service with ephemeral databases (e.g. --test-service user)')
+        .option('--test-mode <mode>', 'Which test directory and environment to run tests in. (e.g. --test-mode localdev). Defaults to "ephemeral" which creates separate databases for testing.')
         .option('--reset-databases, --reset-databases', 'Drop all service databases, re-running all migrations and seeders *NOT IMPLEMENTED')
         .option('--reset-database <service>', 'Drop the specified service database, re-running all migrations and seeders (e.g. --reset-database user)')
         .addOption(new Option('--core-dev').hideHelp())
@@ -46,6 +47,7 @@ export function registerDevCommands(program) {
                     bootstrapDev: options.bootstrapDev || false,
                     test: options.test || false,
                     testService: options.testService || '',
+                    testMode: options.testMode || 'ephemeral',
                     resetDatabases: options.resetDatabases || false,
                     resetDatabase: options.resetDatabase || '',
                     attachAll: options.attachAll || false

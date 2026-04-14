@@ -345,19 +345,23 @@ export const wsManager = {
 
             // report failure to control service
             setTimeout(async () => {
-                const newPeer = await commandBus.execute('controlService.peerConnectionDropped', {
-                    requestingHostname: config.hostname,
-                    requestingServicename: config.serviceName,
-                    droppedPeerHostname: peer.hostname,
-                    getNewPeer: getNewPeer
-                });
-
-                // connect to replacement peer if returned
-                if (newPeer?.hostname) {
-                    this.connect({ 
-                        peer: newPeer,
-                        config: config
+                try {
+                    const newPeer = await commandBus.execute('controlService.peerConnectionDropped', {
+                        requestingHostname: config.hostname,
+                        requestingServicename: config.serviceName,
+                        droppedPeerHostname: peer.hostname,
+                        getNewPeer: getNewPeer
                     });
+
+                    // connect to replacement peer if returned
+                    if (newPeer?.hostname) {
+                        this.connect({ 
+                            peer: newPeer,
+                            config: config
+                        });
+                    }
+                } catch (err) {
+                    loggerService.error(`Failed to report peer connection failure to control service for ${peer.hostname}: ${err.message}`);
                 }
             }, 3000);
         } catch (err) {

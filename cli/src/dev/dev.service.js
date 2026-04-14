@@ -39,7 +39,8 @@ export async function up({
         coreDev = false, 
         bootstrapDev = false, 
         test = false, 
-        testService = '', 
+        testService = '',
+        testMode = 'ephemeral',
         resetDatabases = false,
         resetDatabase = '',
         removeOrphans = true, 
@@ -86,6 +87,7 @@ export async function up({
         bootstrapDev: bootstrapDev,
         test: test,
         testService: testService,
+        testMode: testMode,
         resetDatabases: resetDatabases,
         resetDatabase: resetDatabase,
         attachAll: attachAll,
@@ -263,7 +265,8 @@ async function buildAndUpContainers({
         bootstrapDev = false, 
         build = false, 
         test = false, 
-        testService, 
+        testService,
+        testMode = 'ephemeral',
         resetDatabases = false,
         resetDatabase = '',
         attachAll = false 
@@ -281,7 +284,7 @@ async function buildAndUpContainers({
     // env var adjustments
     for (const svc of config.services) {
         // Tests
-        if (test) {
+        if (test && testMode === 'ephemeral') {
             if (secrets.services?.[svc.name]?.MYSQL_HOST) {
                 secrets.services[svc.name].MYSQL_HOST = 'db-mysql-test';
             }
@@ -292,7 +295,14 @@ async function buildAndUpContainers({
 
             if (secrets.services?.[svc.name]) {
                 if (testService && svc.name === testService) {
-                    secrets.services[svc.name].RUN_TESTS = 'true';
+                    secrets.services[svc.name].RUN_TESTS = testMode;
+                }
+            }
+
+        } else if (test) {
+            if (secrets.services?.[svc.name]) {
+                if (testService && svc.name === testService) {
+                    secrets.services[svc.name].RUN_TESTS = testMode;
                 }
             }
         }
@@ -416,7 +426,7 @@ async function buildAndUpContainers({
         };
 
         // test mode adjustments
-        if (test) {
+        if (test && testMode === 'ephemeral') {
             if (svc.depends_on && svc.depends_on.includes('db-mysql')) {
                 svc.depends_on = svc.depends_on.filter(d => d !== 'db-mysql');
                 svc.depends_on.push('db-mysql-test');

@@ -8,7 +8,7 @@ import path from 'path';
  * Run tests
  */
 export const testService = {
-    testsDirectory: `${process.env.GLOBAL_SERVICE_BASE_DIR}/tests/commands`,
+    testsDirectory: `${process.env.GLOBAL_SERVICE_BASE_DIR}/tests`,
     failed: 0,
     beforeEachFns: [],
     afterEachFns: [],
@@ -32,9 +32,11 @@ export const testService = {
 
     assert: assert,
 
-    runCommandTests: async () => {
+    runCommandTests: async ({ config }) => {
         console.log('==============================');
         console.log('Running command tests...');
+
+        testService.testsDirectory += `/${config.runTests || 'ephemeral'}`;
 
         const testFiles = fs.readdirSync(testService.testsDirectory)
             .filter(file => file.endsWith('.js'))
