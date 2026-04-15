@@ -5,6 +5,7 @@ import { runSeeders, internalHealthCheck } from './commands/handlers/control.han
 import { BadRequestError, initErrorResponses, NotFoundError, UnauthorisedError, FailedHealthCheckError } from './errors/errors.js';
 import { initDbConnection, checkConnection, dropDatabaseData } from './db/db.js';
 import { sqlHelpers } from './db/helpers.js';
+import { decorators } from './utils/decorators.js';
 import { migrations } from './services/migration.service.js';
 import { seeders } from './services/seeder.service.js';
 import { loggerService } from './services/logger.service.js';
@@ -128,7 +129,8 @@ const GnarEngine = {
 		// Utils
 		GnarEngine.utils = {
 			uuid: () => uuidv4(),
-			hash: (term, hashNameSpace) => uuidv5(term, hashNameSpace)
+			hash: (term, hashNameSpace) => uuidv5(term, hashNameSpace),
+            decorators: decorators 
 		}
 
 		// Global pre-handlers
