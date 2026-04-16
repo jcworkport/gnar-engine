@@ -152,6 +152,55 @@ result.data = await utils.decorators.decorateEntityData({
 
 ---
 
+## Full Example — Child holds the parent id
+Use this pattern when the entity you are decorating does not hold the foreign key — instead, the decorator entity stores a reference back to the parent.
+A common example is a leaseholder table that stores a userId foreign key. The user record has no direct leaseholderId, so a standard lookup won't work.
+The solution is two steps:
+
+In extractEntityData, set idField to the parent id field on the child entity (e.g. userId). This re-keys decoratorData by the parent id instead of the child's own id.
+In decorateEntityData, set lookupKey: 'id' so each item matches on its own id against those re-keyed entries.
+
+```js
+import { utils } from '@gnar-engine/core';
+
+// Step 1 — fetch leaseholders, but key the result by userId (the parent id)
+//
+// Without idField: 'userId', decoratorData would be keyed by the leaseholder's
+// own id and would never match against user records.
+const leaseholderData = await utils.decorators.extractEntityData({
+    commandsHandler: commands,
+    command: 'leaseholderService.getManyLeaseholders',
+    ids: userIds,
+    prefix: 'user',        // sends { userIds } to the command
+    fields: ['name', 'addressLine1', 'addressLine2', 'town', 'county', 'postcode'],
+    idField: 'userId',     // re-key result by userId, not leaseholder id
+});
+
+// leaseholderData is now keyed by userId:
+// {
+//   "e817163f-...": { name: 'Mr Naseef Kaliisa', addressLine1: '2 Minster Court', ... },
+// }
+
+// Step 2 — match each user by their own id against the re-keyed decorator data
+usersData.data = await utils.decorators.decorateEntityData({
+    data: usersData.data,
+    decoratorData: leaseholderData,
+    decoratorFields: ['name', 'addressLine1', 'addressLine2', 'town', 'county', 'postcode'],
+    decoratorPrefix: 'user',
+    lookupKey: 'id',       // item.id matches the userId keys in decoratorData
+});
+
+// usersData.data[n] now contains:
+// {
+//   ...originalUserFields,
+//   userName: 'Mr Naseef Kaliisa',
+//   userAddressLine1: '2 Minster Court',
+//   userTown: 'Leicester',
+//   ...
+// }
+```
+---
+
 ## Field Naming Reference
 
 Given `decoratorPrefix: 'property'` and `decoratorFields: ['name', 'address']`:
