@@ -30,7 +30,11 @@ export const testService = {
         testService.afterEachFns.push(fn);
     },
 
-    assert: assert,
+    assert: (message, condition) => {
+        if (!condition) {
+            throw new Error(message);
+        }
+    },
 
     runCommandTests: async ({ config }) => {
         console.log('==============================');

@@ -18,6 +18,7 @@ import { manifest } from './commands/command-manifest.js';
 import { rabbit as rabbitService } from './services/rabbit.js';
 import { v4 as uuidv4 } from 'uuid';
 import { v5 as uuidv5 } from 'uuid';
+import { CronExpressionParser } from 'cron-parser';
 
 const configModule = await import(process.env.GLOBAL_SERVICE_BASE_DIR + 'config.js');
 export const config = configModule.config;
@@ -128,7 +129,8 @@ const GnarEngine = {
 		// Utils
 		GnarEngine.utils = {
 			uuid: () => uuidv4(),
-			hash: (term, hashNameSpace) => uuidv5(term, hashNameSpace)
+			hash: (term, hashNameSpace) => uuidv5(term, hashNameSpace),
+            cronExpressionParser: CronExpressionParser
 		}
 
 		// Global pre-handlers
