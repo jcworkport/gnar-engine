@@ -130,7 +130,7 @@ const GnarEngine = {
 		GnarEngine.utils = {
 			uuid: () => uuidv4(),
 			hash: (term, hashNameSpace) => uuidv5(term, hashNameSpace),
-            CronExpressionParser: CronExpressionParser
+            cronExpressionParser: CronExpressionParser
 		}
 
 		// Global pre-handlers
