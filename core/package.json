@@ -1,6 +1,6 @@
 {
   "name": "@gnar-engine/core",
-  "version": "1.0.19",
+  "version": "1.0.20",
   "description": "Gnar Engine - Service Core",
   "type": "module",
   "main": "dist/core.js",
