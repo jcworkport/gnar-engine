@@ -19,6 +19,7 @@ import { rabbit as rabbitService } from './services/rabbit.js';
 import { v4 as uuidv4 } from 'uuid';
 import { v5 as uuidv5 } from 'uuid';
 import { CronExpressionParser } from 'cron-parser';
+import bcrypt from 'bcrypt';
 
 const configModule = await import(process.env.GLOBAL_SERVICE_BASE_DIR + 'config.js');
 export const config = configModule.config;
@@ -132,18 +133,21 @@ const GnarEngine = {
             hash: async (password) => {
                 return await bcrypt.hash(password, 10);
             },
-            verifyHash: async (term, hash, hashNameSpace = '') => {
-                // use bcrypt
-                if (await bcrypt.compare(password, hash)) {
-                    return true;
+            verifyHash: async (passwordAttempt, hash, hashNameSpace = '') => {
+                // migrating to bcrypt hashes from uuidv5
+                const isBcryptHash = typeof hash === 'string' && hash.startsWith('$2');
+
+                if (isBcryptHash) {
+                    return await bcrypt.compare(passwordAttempt, hash);
                 }
-                // backwards compat for uuidv5 hashes
-                else if (uuidv5(term, hashNameSpace)) {
-                    return true;
-                }
+
+                // fallback: uuidv5 legacy hashes
                 else {
-                    return false;
+                    const uuidv5Hash = uuidv5(passwordAttempt, hashNameSpace);
+                    return uuidv5Hash === hash;
                 }
+
+                return false;
             },
             cronExpressionParser: CronExpressionParser
         }
