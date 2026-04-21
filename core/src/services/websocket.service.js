@@ -144,6 +144,10 @@ export const wsManager = {
                     const checkedAllPeers = Object.entries(peerAddresses).every(([serviceName, peer]) => {
                         if (peer.hostname || serviceName == config.serviceName || (this.wsConnections[serviceName] && Object.keys(this.wsConnections[serviceName]).length > 0)) {
                             return true;
+                        } else if (!peer.hostname) {
+                            // return true, because we're never going to find it from this side
+                            loggerService.error('Peer information is missing for failed connection. This can occur if a service is down for a prolonged period. This service will now wait for an inbound connection.');
+                            return true;
                         } else {
                             loggerService.info(`Still missing peer connection for ${serviceName}, due to ${peer}`);
                         }
@@ -346,6 +350,12 @@ export const wsManager = {
             // report failure to control service
             setTimeout(async () => {
                 try {
+                    loggerService.info('Reporting peer connection failure to control service', peer);
+
+                    if (!peer.hostname) {
+                        throw new Error('Peer information is missing for failed connection. This can occur if a service is down for a prolonged period. This service will now wait for an inbound connection.');
+                    }
+
                     const newPeer = await commandBus.execute('controlService.peerConnectionDropped', {
                         requestingHostname: config.hostname,
                         requestingServicename: config.serviceName,
