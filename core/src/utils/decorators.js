@@ -32,27 +32,34 @@ export const decorators = {
      * You will need to asign the result to the data array to update the data with the decorated data.
      * @param {Object} param0
      * @param {Array} param0.data - The data to decorate (e.g. list of journal entries with propertyId)
-     * @param {Object} param0.decoratorData - The data to use for decoration (e.g. property data with name and address)
-     * @param {Array} param0.decoratorFields - The fields to decorate onto the data (e.g. ['name', 'address'])
-     * @param {String} param0.decoratorPrefix - The prefix to use for the decorated fields (e.g. 'property' to decorate name as propertyName)
-     * @param {String} param0.lookupKey - The key to use for looking up the decorator data (e.g. 'propertyId' to match journal entries with property data), defaults to `${decoratorPrefix}Id` 
+     * @param {Object} param0.decorateWith - The data to use for decoration (e.g. property data with name and address)
+     * @param {Array} param0.includeFields - The fields to decorate onto the data (e.g. ['name', 'address'])
+     * @param {String} param0.propertyName - The property name  to use for the decorated fields (e.g. 'property' to decorate name as propertyName)
+     * @param {String} param0.lookupKey - The key to use for looking up the decorator data (e.g. 'propertyId' to match journal entries with property data), defaults to `${propertyName}Id` 
      * @returns {void}
      */
-    async decorateEntityData({ data, decoratorData, decoratorFields, decoratorPrefix, lookupKey }) {
-
+    async decorateEntityData({ data, decorateWith, includeFields, propertyName, lookupKey }) {
         return data.map(item => {
-            // Use explicit lookupKey if provided, otherwise fall back to the default `${decoratorPrefix}Id`
-            const id = item[lookupKey ?? `${decoratorPrefix}Id`];
+            const id = item[lookupKey ?? `${propertyName}Id`];
 
             const updated = { ...item };
 
-            if (id && decoratorData[id]) {
-                decoratorFields.forEach(field => {
-                    updated[`${decoratorPrefix}${field.charAt(0).toUpperCase() + field.slice(1)}`] = decoratorData[id][field] || null;
+            if (id && decorateWith[id]) {
+                // Build nested object
+                const nested = {};
+
+                includeFields.forEach(field => {
+                    nested[field] = decorateWith[id][field] ?? null;
                 });
+
+                // Assign as a single property
+                updated[propertyName] = nested;
+            } else {
+                // Optional: still include empty object for consistency
+                updated[propertyName] = null;
             }
 
             return updated;
         });
-    },
+    }
 }

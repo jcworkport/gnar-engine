@@ -75,16 +75,16 @@ Returns an empty object `{}` if `ids` is empty.
 
 ## `decorateEntityData`
 
-Merges decorator data onto each item in a data array. Each decorated field is written as a camelCase prefixed key (e.g. field `name` with prefix `property` → `propertyName`).
+Merges decorator data onto each item in a data array as a **nested object** under `propertyName`.
 
 ### Signature
 
 ```javascript
 result.data = await utils.decorators.decorateEntityData({
     data,
-    decoratorData,
-    decoratorFields,
-    decoratorPrefix,
+    decorateWith,
+    includeFields,
+    propertyName,
     lookupKey,  // optional
 });
 ```
@@ -96,10 +96,10 @@ result.data = await utils.decorators.decorateEntityData({
 | Parameter | Type | Required | Description |
 |---|---|---|---|
 | `data` | `Array` | ✅ | The array of records to decorate (e.g. journal entries) |
-| `decoratorData` | `Object` | ✅ | The indexed entity data returned by `extractEntityData` |
-| `decoratorFields` | `Array<String>` | ✅ | Fields to merge onto each record (e.g. `['name', 'address']`) |
-| `decoratorPrefix` | `String` | ✅ | Prefix applied to each merged field (e.g. `'property'` → `propertyName`) |
-| `lookupKey` | `String` | — | The key on each `data` item used to look up its entry in `decoratorData`. Defaults to `${decoratorPrefix}Id` |
+| `decorateWith` | `Object` | ✅ | The indexed entity data returned by `extractEntityData` |
+| `includeFields` | `Array<String>` | ✅ | Fields to include in the nested object (e.g. `['name', 'address']`) |
+| `propertyName` | `String` | ✅ | The property name under which the nested object will be assigned (e.g. `'property'`) |
+| `lookupKey` | `String` | — | The key on each `data` item used to look up its entry in `decorateWith`. Defaults to `${propertyName}Id` |
 
 ### Returns
 
@@ -107,15 +107,17 @@ result.data = await utils.decorators.decorateEntityData({
 Array<Record>
 ```
 
-A new array where each item has the decorator fields merged in under their prefixed names. Items with no matching id in `decoratorData` are returned unchanged.
+A new array where each item has a nested object assigned at `propertyName`.
 
-If a matched field value is falsy, it is written as `null`.
+If no matching id is found, the property is set to `null`.
 
 ### Behaviour Notes
 
-- Each field `f` is written as `${decoratorPrefix}${f[0].toUpperCase()}${f.slice(1)}` (standard camelCase prefix).
-- Items without a matching id in `decoratorData` pass through unmodified.
+- The decorated fields are grouped into a single object:  
+  `item[propertyName] = { field1, field2, ... }`
+- Items without a matching id in `decorateWith` will have `propertyName: null`.
 - The original `data` array is **not mutated** — a new array is returned.
+- Missing or falsy values are normalised to `null`.
 
 ---
 
@@ -130,85 +132,87 @@ const propertyData = await utils.decorators.extractEntityData({
     command: 'propertyService.getManyProperties',
     ids: propertyIds,
     fields: ['name', 'address'],
-    // prefix: 'property'  →  sends { propertyIds } to the command
 });
 
 // Step 2 — merge property fields onto each journal entry
 result.data = await utils.decorators.decorateEntityData({
     data: result.data,
-    decoratorData: propertyData,
-    decoratorFields: ['name', 'address'],
-    decoratorPrefix: 'property',
-    // lookupKey defaults to 'propertyId'
+    decorateWith: propertyData,
+    includeFields: ['name', 'address'],
+    propertyName: 'property',
 });
 
 // result.data[n] now contains:
 // {
 //   ...originalFields,
-//   propertyName: 'Sunset Apartments',
-//   propertyAddress: '123 Main St',
+//   property: {
+//     name: 'Sunset Apartments',
+//     address: '123 Main St',
+//   }
 // }
 ```
 
 ---
 
 ## Full Example — Child holds the parent id
-Use this pattern when the entity you are decorating does not hold the foreign key — instead, the decorator entity stores a reference back to the parent.
-A common example is a leaseholder table that stores a userId foreign key. The user record has no direct leaseholderId, so a standard lookup won't work.
-The solution is two steps:
 
-In extractEntityData, set idField to the parent id field on the child entity (e.g. userId). This re-keys decoratorData by the parent id instead of the child's own id.
-In decorateEntityData, set lookupKey: 'id' so each item matches on its own id against those re-keyed entries.
+Use this pattern when the entity you are decorating does not hold the foreign key — instead, the decorator entity stores a reference back to the parent.
 
 ```js
 import { utils } from '@gnar-engine/core';
 
-// Step 1 — fetch leaseholders, but key the result by userId (the parent id)
-//
-// Without idField: 'userId', decoratorData would be keyed by the leaseholder's
-// own id and would never match against user records.
+// Step 1 — fetch leaseholders, but key the result by userId
 const leaseholderData = await utils.decorators.extractEntityData({
     commandsHandler: commands,
     command: 'leaseholderService.getManyLeaseholders',
     ids: userIds,
-    prefix: 'user',        // sends { userIds } to the command
+    prefix: 'user',
     fields: ['name', 'addressLine1', 'addressLine2', 'town', 'county', 'postcode'],
-    idField: 'userId',     // re-key result by userId, not leaseholder id
+    idField: 'userId',
 });
 
-// leaseholderData is now keyed by userId:
-// {
-//   "e817163f-...": { name: 'Mr Naseef Kaliisa', addressLine1: '2 Minster Court', ... },
-// }
-
-// Step 2 — match each user by their own id against the re-keyed decorator data
+// Step 2 — match each user by their own id
 usersData.data = await utils.decorators.decorateEntityData({
     data: usersData.data,
-    decoratorData: leaseholderData,
-    decoratorFields: ['name', 'addressLine1', 'addressLine2', 'town', 'county', 'postcode'],
-    decoratorPrefix: 'user',
-    lookupKey: 'id',       // item.id matches the userId keys in decoratorData
+    decorateWith: leaseholderData,
+    includeFields: ['name', 'addressLine1', 'addressLine2', 'town', 'county', 'postcode'],
+    propertyName: 'user',
+    lookupKey: 'id',
 });
 
 // usersData.data[n] now contains:
 // {
 //   ...originalUserFields,
-//   userName: 'Mr Naseef Kaliisa',
-//   userAddressLine1: '2 Minster Court',
-//   userTown: 'Leicester',
-//   ...
+//   user: {
+//     name: 'Mr Naseef Kaliisa',
+//     addressLine1: '2 Minster Court',
+//     town: 'Leicester',
+//     ...
+//   }
 // }
 ```
+
 ---
 
-## Field Naming Reference
+## Data Shape Reference
 
-Given `decoratorPrefix: 'property'` and `decoratorFields: ['name', 'address']`:
+Given:
 
-| Original field | Decorated key on item |
-|---|---|
-| `name` | `propertyName` |
-| `address` | `propertyAddress` |
+```javascript
+propertyName: 'property'
+includeFields: ['name', 'address']
+```
+
+### Output structure
+
+```javascript
+{
+  property: {
+    name: string | null,
+    address: string | null,
+  }
+}
+```
 
 ---
 
@@ -224,20 +228,20 @@ const unitData = await utils.decorators.extractEntityData({
     command: 'unitService.getManyUnits',
     ids: unitIds,
     fields: ['unitNumber', 'floor'],
-    idField: 'unitId',   // index by entity.unitId instead of entity.id
+    idField: 'unitId',
 });
 ```
 
 ### Custom lookup key
 
-Use `lookupKey` when the foreign key on your data items does not follow the `${prefix}Id` convention:
+Use `lookupKey` when the foreign key on your data items does not follow the `${propertyName}Id` convention:
 
 ```javascript
 result.data = await utils.decorators.decorateEntityData({
     data: result.data,
-    decoratorData: tenantData,
-    decoratorFields: ['fullName', 'email'],
-    decoratorPrefix: 'tenant',
-    lookupKey: 'occupantId',   // item.occupantId instead of item.tenantId
+    decorateWith: tenantData,
+    includeFields: ['fullName', 'email'],
+    propertyName: 'tenant',
+    lookupKey: 'occupantId',
 });
 ```
