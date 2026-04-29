@@ -114,7 +114,9 @@ const initMysqlConnection = async ({ host, user, password, database, connectionL
                 database: database,
                 waitForConnections: true,
                 connectionLimit: connectionLimit,
-                queueLimit: queueLimit
+                queueLimit: queueLimit,
+                enableKeepAlive: true,
+                keepAliveInitialDelay: 0
             });
 
             // Manual keep alives every 1 minute

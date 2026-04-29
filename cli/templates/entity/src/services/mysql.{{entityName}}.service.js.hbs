@@ -67,10 +67,6 @@ export const {{entityName}} = {
             return this.getById({ id });
         }
 
-        // Handle many to many relations
-        const newOwnerIds = updatedData.ownerIds ? updatedData.ownerIds : null;
-        delete updatedData.ownerIds;
-
         // map columns and update
         const columns = Object.keys(updatedData).map((key) => db.sql.helpers.toSnake(key));
         const assignments = columns.map(col => `${col} = ?`);
