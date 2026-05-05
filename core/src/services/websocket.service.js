@@ -163,6 +163,24 @@ export const wsManager = {
                 loggerService.info(`Initial peer connections established to: `, Object.keys(peerAddresses));
             }
         }
+
+        // keep alives
+        setInterval(() => {
+            Object.values(this.wsConnections).forEach(service => {
+                Object.values(service).forEach(ws => {
+                    // send keep alive pings
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.ping();
+                    }
+
+                    // check for most recent pong
+                    if ((ws.lastPong && Date.now() - ws.lastPong > 30000)) {
+                        loggerService.warning('No pong received, terminating connection');
+                        ws.terminate();
+                    }
+                });
+            });
+        }, 10000);
     },
 
     /**
@@ -184,6 +202,10 @@ export const wsManager = {
             this.wsConnections[serviceName][serviceHostname] = ws;
 
             loggerService.info(`Peer connected (inbound): ${serviceName} (${serviceHostname})`);
+
+            ws.on('pong', () => {
+                ws.lastPong = Date.now();
+            });
 
             ws.on('message', (raw) => {
                 this.handleMessage({ 
@@ -232,7 +254,13 @@ export const wsManager = {
                 // Resolve when the connection opens
                 ws.on('open', () => {
                     loggerService.info(`Connected to control service`);
-                
+
+                    ws.lastPong = Date.now();
+
+                    ws.on('pong', () => {
+                        ws.lastPong = Date.now();
+                    });
+
                     if (!this.wsConnections['controlService']) {
                         this.wsConnections['controlService'] = {};
                     }
@@ -297,6 +325,14 @@ export const wsManager = {
 
             ws.on('open', () => {
                 loggerService.info(`Connected to peer ${peer.hostname} at ${url}`);
+
+                ws.isAlive = true;
+                ws.lastPong = Date.now();
+
+                ws.on('pong', () => {
+                    ws.lastPong = Date.now();
+                });
+
                 this.wsConnections[peer.name][peer.hostname] = ws;
 
                 ws.on('message', (raw) => {
